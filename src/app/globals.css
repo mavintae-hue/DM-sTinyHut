@@ -64,6 +64,24 @@ body {
   image-rendering: crisp-edges;
 }
 
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(234, 179, 8, 0.2);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(234, 179, 8, 0.4);
+}
+
 @keyframes runJump {
   0% { transform: translateX(-20vw) scale(1); }
   25% { transform: translateX(25vw) scale(1.1) translateY(-50px); }

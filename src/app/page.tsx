@@ -7,7 +7,7 @@ import HistoryLog from "@/components/HistoryLog";
 import DiceCanvas from "@/components/DiceCanvas";
 import QuickRoller from "@/components/QuickRoller";
 import { useSupabaseRealtime, RollRequest, RollResult, ActivePlayer } from "@/hooks/useSupabaseRealtime";
-import { Dices, LogIn, Users, Settings2, X, Trash2, Palette, UserPlus, UploadCloud, ChevronLeft, Paintbrush, Check } from "lucide-react";
+import { Dices, LogIn, Users, Settings2, X, Trash2, Palette, UserPlus, UploadCloud, ChevronLeft, Paintbrush, Check, Globe, Sparkles } from "lucide-react";
 
 export const DICE_COLORS = [
   { name: "Void Black", hex: "#1a1a1a" },
@@ -388,20 +388,50 @@ export default function Home() {
           </div>
 
           <form onSubmit={handleJoinRoom} className="space-y-6">
-            <div className="space-y-3">
-              <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.3em] ml-3">Enter Secret Realm ID</label>
-              <input 
-                required 
-                type="text" 
-                list="roomsList" 
-                className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-lg text-white placeholder:text-gray-500 focus:border-gold focus:bg-white/10 transition-all outline-none shadow-inner" 
-                value={roomId} 
-                onChange={e => setRoomId(e.target.value)} 
-                placeholder="Realm Name..." 
-              />
-              <datalist id="roomsList">
-                {savedRooms.map(r => <option key={r} value={r} />)}
-              </datalist>
+            <div className="space-y-4">
+              {/* Existing Portals Section */}
+              {savedRooms.length > 0 && (
+                <div className="space-y-3">
+                  <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.3em] ml-3 flex items-center gap-2">
+                    <Sparkles className="w-3 h-3 text-gold" /> Active Portals
+                  </label>
+                  <div className="grid grid-cols-2 gap-2 max-h-[160px] overflow-y-auto pr-2 custom-scrollbar">
+                    {savedRooms.map(r => (
+                      <button
+                        key={"portal-" + r}
+                        type="button"
+                        onClick={() => setRoomId(r)}
+                        className={`group flex items-center gap-3 p-3 rounded-2xl border transition-all text-left ${roomId === r ? 'bg-gold/10 border-gold shadow-[0_0_15px_rgba(234,179,8,0.2)]' : 'bg-white/5 border-white/10 hover:border-white/30 hover:bg-white/10'}`}
+                      >
+                        <div className={`p-2 rounded-xl border ${roomId === r ? 'bg-gold border-gold text-darker' : 'bg-white/5 border-white/10 text-gray-500 group-hover:text-white'}`}>
+                          <Globe className="w-4 h-4" />
+                        </div>
+                        <span className={`text-sm font-bold truncate ${roomId === r ? 'text-gold' : 'text-gray-400 group-hover:text-white'}`}>
+                          {r}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Manual Input Section */}
+              <div className="space-y-3">
+                <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.3em] ml-3">Enter Secret Realm ID</label>
+                <div className="relative group">
+                  <input 
+                    required 
+                    type="text" 
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-lg text-white placeholder:text-gray-600 focus:border-gold focus:bg-dark transition-all outline-none shadow-inner" 
+                    value={roomId} 
+                    onChange={e => setRoomId(e.target.value)} 
+                    placeholder="Realm Name..." 
+                  />
+                  <div className="absolute right-5 top-1/2 -translate-y-1/2 opacity-20 group-focus-within:opacity-100 transition-opacity">
+                    <Dices className="w-5 h-5 text-gold" />
+                  </div>
+                </div>
+              </div>
             </div>
             
             <button type="submit" className="group w-full bg-gradient-to-br from-yellow-700 via-yellow-400 to-yellow-700 text-darker font-black py-5 rounded-2xl hover:scale-[1.03] active:scale-[0.97] transition-all shadow-[0_20px_40px_-15px_rgba(234,179,8,0.4)] flex items-center justify-center gap-3 uppercase tracking-tighter text-lg">

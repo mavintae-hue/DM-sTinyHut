@@ -4,8 +4,14 @@ import { useState } from "react";
 import { parseDnDBeyondPdf, ParsedAction, ParsedCharacter } from "@/lib/pdfParser";
 import { UploadCloud, X, Check, FileText, Loader2, Sparkles, Sword } from "lucide-react";
 
+export interface ImportOptions {
+  importStats: boolean;
+  importProficiencies: boolean;
+  importActions: boolean;
+}
+
 interface PdfImporterProps {
-  onImport: (character: ParsedCharacter) => void;
+  onImport: (character: ParsedCharacter, options: ImportOptions) => void;
   onClose: () => void;
 }
 
@@ -14,6 +20,11 @@ export default function PdfImporter({ onImport, onClose }: PdfImporterProps) {
   const [parsedResult, setParsedResult] = useState<ParsedCharacter | null>(null);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  // Toggles state
+  const [importStats, setImportStats] = useState(true);
+  const [importProficiencies, setImportProficiencies] = useState(true);
+  const [importActions, setImportActions] = useState(true);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -51,7 +62,7 @@ export default function PdfImporter({ onImport, onClose }: PdfImporterProps) {
         actions: parsedResult.actions.filter((_, i) => selectedIds.includes(i))
     };
     
-    onImport(finalCharacter);
+    onImport(finalCharacter, { importStats, importProficiencies, importActions });
     onClose();
   };
 
@@ -121,34 +132,55 @@ export default function PdfImporter({ onImport, onClose }: PdfImporterProps) {
                 </button>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] ml-2">Available Actions</label>
-                <div className="grid gap-2">
-                  {parsedResult.actions.map((action, i) => (
-                    <div 
-                      key={i}
-                      onClick={() => toggleAction(i)}
-                      className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
-                        selectedIds.includes(i) 
-                        ? 'bg-gold/10 border-gold/50 shadow-[0_0_15px_rgba(234,179,8,0.1)]' 
-                        : 'bg-white/5 border-white/5 hover:border-white/20'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-5 h-5 rounded flex items-center justify-center transition-colors ${
-                          selectedIds.includes(i) ? 'bg-gold' : 'bg-white/10'
-                        }`}>
-                          {selectedIds.includes(i) && <Check className="w-3.5 h-3.5 text-darker font-bold" />}
-                        </div>
-                        <div>
-                          <p className="text-white text-sm font-bold">{action.name}</p>
-                          <p className="text-[10px] text-gray-500">Hit +{action.hitBonus} | {action.damageDice}</p>
+                <div className="bg-black/30 border border-white/5 p-4 rounded-2xl mb-4 space-y-3">
+                   <h4 className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Import Options</h4>
+                   
+                   <label className="flex items-center gap-3 cursor-pointer group">
+                      <input type="checkbox" checked={importStats} onChange={e => setImportStats(e.target.checked)} className="appearance-none w-5 h-5 rounded bg-white/5 border border-white/10 checked:bg-gold checked:border-gold relative before:absolute before:inset-0 before:flex before:items-center before:justify-center before:text-darker checked:before:content-['✓'] before:font-black" />
+                      <span className="text-sm font-bold text-gray-300 group-hover:text-white transition-colors">Core Stats (HP, AC, Speed, Initiative, Ability Scores)</span>
+                   </label>
+                   
+                   <label className="flex items-center gap-3 cursor-pointer group">
+                      <input type="checkbox" checked={importProficiencies} onChange={e => setImportProficiencies(e.target.checked)} className="appearance-none w-5 h-5 rounded bg-white/5 border border-white/10 checked:bg-gold checked:border-gold relative before:absolute before:inset-0 before:flex before:items-center before:justify-center before:text-darker checked:before:content-['✓'] before:font-black" />
+                      <span className="text-sm font-bold text-gray-300 group-hover:text-white transition-colors">Proficiencies (Skills, Saves, Senses)</span>
+                   </label>
+                   
+                   <label className="flex items-center gap-3 cursor-pointer group">
+                      <input type="checkbox" checked={importActions} onChange={e => setImportActions(e.target.checked)} className="appearance-none w-5 h-5 rounded bg-white/5 border border-white/10 checked:bg-gold checked:border-gold relative before:absolute before:inset-0 before:flex before:items-center before:justify-center before:text-darker checked:before:content-['✓'] before:font-black" />
+                      <span className="text-sm font-bold text-gray-300 group-hover:text-white transition-colors">Actions & Weapons <span className="text-[10px] text-gray-500 font-normal ml-2">(Smart Merge: Only updates duplicates, adds new)</span></span>
+                   </label>
+                </div>
+
+                {importActions && (
+                <div className="space-y-2 animate-in fade-in duration-300">
+                  <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] ml-2">Available Actions</label>
+                  <div className="grid gap-2">
+                    {parsedResult.actions.map((action, i) => (
+                      <div 
+                        key={i}
+                        onClick={() => toggleAction(i)}
+                        className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
+                          selectedIds.includes(i) 
+                          ? 'bg-gold/10 border-gold/50 shadow-[0_0_15px_rgba(234,179,8,0.1)]' 
+                          : 'bg-white/5 border-white/5 hover:border-white/20'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-5 h-5 rounded flex items-center justify-center transition-colors ${
+                            selectedIds.includes(i) ? 'bg-gold' : 'bg-white/10'
+                          }`}>
+                            {selectedIds.includes(i) && <Check className="w-3.5 h-3.5 text-darker font-bold" />}
+                          </div>
+                          <div>
+                            <p className="text-white text-sm font-bold">{action.name}</p>
+                            <p className="text-[10px] text-gray-500">Hit +{action.hitBonus} | {action.damageDice}</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
+                )}
             </div>
           )}
         </div>

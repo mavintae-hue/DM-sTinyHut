@@ -173,39 +173,69 @@ export default function Home() {
     }
   };
 
-  const handleImportActions = async (parsedCharacter: any) => {
+  const handleImportActions = async (parsedCharacter: any, options?: any) => {
     if (!roomUuid) return;
+    
+    const opt = options || { importStats: true, importProficiencies: true, importActions: true };
+    const updatePayload: any = { class_level: parsedCharacter.classLevel };
+    
+    if (opt.importStats) {
+      updatePayload.ac = parsedCharacter.ac;
+      updatePayload.hp_current = parsedCharacter.hpCurrent;
+      updatePayload.hp_max = parsedCharacter.hpMax;
+      updatePayload.initiative = parsedCharacter.initiative;
+      updatePayload.speed = parsedCharacter.speed;
+      updatePayload.ability_scores = parsedCharacter.abilityScores;
+    }
+    
+    if (opt.importProficiencies) {
+      updatePayload.proficiency_bonus = parsedCharacter.proficiencyBonus;
+      updatePayload.skills = parsedCharacter.skills;
+      updatePayload.saves = parsedCharacter.saves;
+      updatePayload.senses = parsedCharacter.senses;
+    }
+
     const { error: playerError } = await supabase.from("players")
-      .update({
-        ac: parsedCharacter.ac,
-        hp_current: parsedCharacter.hpCurrent,
-        hp_max: parsedCharacter.hpMax,
-        initiative: parsedCharacter.initiative,
-        speed: parsedCharacter.speed,
-        proficiency_bonus: parsedCharacter.proficiencyBonus,
-        ability_scores: parsedCharacter.abilityScores,
-        skills: parsedCharacter.skills,
-        saves: parsedCharacter.saves,
-        senses: parsedCharacter.senses,
-        class_level: parsedCharacter.classLevel
-      })
+      .update(updatePayload)
       .eq("room_id", roomUuid)
       .eq("name", playerName);
 
     if (!playerError) fetchCurrentPlayerData(roomUuid, playerName);
 
-    const itemsToInsert = parsedCharacter.actions.map((a: any) => ({
-      room_id: roomUuid,
-      owner_name: playerName,
-      name: a.name,
-      attack_range: a.range,
-      hit_bonus: a.hitBonus,
-      damage_dice: a.damageDice,
-      notes: a.notes
-    }));
-
-    await supabase.from("actions").insert(itemsToInsert);
-    fetchActions(roomUuid, playerName);
+    if (opt.importActions) {
+      // Smart Merge Actions
+      const { data: existingActions } = await supabase
+        .from("actions")
+        .select("id, name")
+        .eq("room_id", roomUuid)
+        .eq("owner_name", playerName);
+        
+      const existingActionMap = new Map((existingActions || []).map((a: any) => [a.name, a.id]));
+      
+      for (const a of parsedCharacter.actions) {
+        if (existingActionMap.has(a.name)) {
+          // Update existing weapon to prevent duplicates
+          await supabase.from("actions").update({
+             attack_range: a.range,
+             hit_bonus: a.hitBonus,
+             damage_dice: a.damageDice,
+             notes: a.notes || undefined
+          }).eq("id", existingActionMap.get(a.name));
+        } else {
+          // Insert new weapon
+          await supabase.from("actions").insert({
+            room_id: roomUuid,
+            owner_name: playerName,
+            name: a.name,
+            attack_range: a.range,
+            hit_bonus: a.hitBonus,
+            damage_dice: a.damageDice,
+            notes: a.notes || undefined
+          });
+        }
+      }
+      fetchActions(roomUuid, playerName);
+    }
   };
 
   const handleRoll = (label: string, mod: number, type: 'normal' | 'adv' | 'dis', isDamage = false, formulaUrl?: string) => {

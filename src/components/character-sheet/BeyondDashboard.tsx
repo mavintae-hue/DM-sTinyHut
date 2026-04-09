@@ -17,7 +17,7 @@ interface BeyondDashboardProps {
   onAddCustomAction: (action: any) => void;
   onUpdateAction: (action: any) => void;
   onDeleteAction: (id: string) => void;
-  onImportActions: (character: any) => void;
+  onImportActions: (character: any, options?: any) => void;
   onUpdateHp: (current: number) => void;
   onUpdateAvatar: (input: string | File) => void;
 }

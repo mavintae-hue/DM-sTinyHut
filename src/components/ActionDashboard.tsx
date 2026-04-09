@@ -26,7 +26,7 @@ interface ActionDashboardProps {
   onAddCustomAction: (action: Omit<ActionItem, "id">) => void;
   onUpdateAction: (action: ActionItem) => void;
   onDeleteAction: (id: string) => void;
-  onImportActions: (data: any) => void;
+  onImportActions: (data: any, options?: any) => void;
 }
 
 export default function ActionDashboard({ 
@@ -224,8 +224,8 @@ export default function ActionDashboard({
             <div className="bg-[#111] border border-white/10 rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
               <PdfImporter 
                 onClose={() => setIsPdfModalOpen(false)} 
-                onImport={(character) => {
-                  onImportActions(character); // Send the WHOLE character object
+                onImport={(character, options) => {
+                  onImportActions(character, options);
                   setIsPdfModalOpen(false);
                 }}
               />

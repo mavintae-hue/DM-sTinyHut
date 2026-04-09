@@ -10,6 +10,7 @@ import BeyondDashboard from "@/components/character-sheet/BeyondDashboard";
 // Load DiceCanvas dynamically to prevent SSR issues with the 3D physics engine
 const DiceCanvas = dynamic(() => import("@/components/DiceCanvas"), { ssr: false });
 import { useSupabaseRealtime, RollRequest } from "@/hooks/useSupabaseRealtime";
+import { rollDice } from "@/lib/diceManager";
 import { LogIn, Users, Trash2, Palette, UserPlus, ChevronLeft, Paintbrush, Globe, Sparkles } from "lucide-react";
 
 export const DICE_COLORS = [
@@ -80,9 +81,6 @@ export default function Home() {
   const [newPlayerFile, setNewPlayerFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [savedRooms, setSavedRooms] = useState<{ id: string, name: string }[]>([]);
-
-  // Active roll request — passed directly to DiceCanvas as a prop (bypasses broadcast)
-  const [activeRollRequest, setActiveRollRequest] = useState<import("@/hooks/useSupabaseRealtime").RollRequest | null>(null);
 
   // Realtime hook
   const { logs, sendRollRequest, saveRollResult, activePlayers } = useSupabaseRealtime(
@@ -283,16 +281,20 @@ export default function Home() {
       themeColor: themeColor || '#9b111e',
     };
 
-    // Trigger dice directly via prop (avoids broadcast listener timing issues)
-    setActiveRollRequest({ ...request, _id: Date.now() } as any);
+    // Call diceManager directly — no React state, no broadcast timing issues
+    rollDice(
+      request,
+      () => playerName,
+      (res) => saveRollResult({ ...res, resultDetails: { ...res.resultDetails, player_avatar: playerAvatar } })
+    );
 
-    // Also broadcast so other players' dice react (multiplayer)
+    // Broadcast for multiplayer (other players see the request)
     sendRollRequest(request);
   };
 
   const handleQuickRoll = (request: RollRequest) => {
     const req = { ...request, themeColor };
-    setActiveRollRequest({ ...req, _id: Date.now() } as any);
+    rollDice(req, () => playerName, (res) => saveRollResult({ ...res, resultDetails: { ...res.resultDetails, player_avatar: playerAvatar } }));
     sendRollRequest(req);
   };
 
@@ -578,12 +580,7 @@ export default function Home() {
         </div>
       )}
 
-      <DiceCanvas 
-        playerName={playerName} 
-        themeColor={themeColor}
-        rollRequest={activeRollRequest}
-        onRollComplete={res => saveRollResult({ ...res, resultDetails: { ...res.resultDetails, player_avatar: playerAvatar } })} 
-      />
+      <DiceCanvas themeColor={themeColor} />
     </main>
   );
 }

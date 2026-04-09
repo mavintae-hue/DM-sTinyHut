@@ -121,6 +121,19 @@ export default function BeyondDashboard({
             editable={isEditMode}
             onUpdate={(val) => onUpdatePlayer({ ac: parseInt(val as string) || 0 })}
           />
+          <div className="flex flex-col items-center justify-center p-2.5 bg-[#1a1a1a] border border-cyan-400/30 rounded-xl shadow-xl min-w-[80px] h-[72px]">
+            <span className="text-[8px] font-black opacity-50 uppercase tracking-widest mb-1">Prof Bonus</span>
+            {isEditMode ? (
+              <input
+                type="number"
+                className="bg-transparent text-2xl font-black tracking-tighter w-12 text-center outline-none focus:text-white border-b border-white/10 text-cyan-400"
+                value={player.proficiency_bonus || 2}
+                onChange={(e) => onUpdatePlayer({ proficiency_bonus: parseInt(e.target.value) || 0 })}
+              />
+            ) : (
+              <span className="text-2xl font-black tracking-tighter text-cyan-400">+{player.proficiency_bonus || 2}</span>
+            )}
+          </div>
           <CombatBox
             label="Initiative"
             value={player.initiative >= 0 ? `+${player.initiative}` : player.initiative}

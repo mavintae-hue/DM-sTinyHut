@@ -6,6 +6,7 @@ import HistoryLog from "@/components/HistoryLog";
 import DiceCanvas from "@/components/DiceCanvas";
 import QuickRoller from "@/components/QuickRoller";
 import BeyondDashboard from "@/components/character-sheet/BeyondDashboard";
+import FloatingWidget from "@/components/FloatingWidget";
 import { useSupabaseRealtime, RollRequest, RollResult } from "@/hooks/useSupabaseRealtime";
 import { Dices, LogIn, Users, Settings2, X, Trash2, Palette, UserPlus, UploadCloud, ChevronLeft, Paintbrush, Check, Globe, Sparkles, Plus } from "lucide-react";
 
@@ -52,25 +53,25 @@ const _CRIT_MSGS = ["เช็ดเย้ โหดวะ", "DM มี Slivery 
 const _FAIL_MSGS = ["เห้ออออออ", "เออไม่ต้องตีมันโดนหรอก", "ตีโดนเพื่อนไหม", "จบบบบบบบ"];
 
 export default function Home() {
-  const [themeColor, setThemeColor] = useState("#9b111e"); 
+  const [themeColor, setThemeColor] = useState("#9b111e");
   const [bgTheme, setBgTheme] = useState(BG_PRESETS[0].url);
   const [fontTheme, setFontTheme] = useState(FONT_PRESETS[0].color);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showThemePicker, setShowThemePicker] = useState(false);
-  const [splashAnimation, setSplashAnimation] = useState<{type: "crit" | "fail", message: string, playerName?: string, playerAvatar?: string | null} | null>(null);
+  const [splashAnimation, setSplashAnimation] = useState<{ type: "crit" | "fail", message: string, playerName?: string, playerAvatar?: string | null } | null>(null);
   const lastProcessedLogTimestamp = useRef<string | null>(null);
-  
+
   const [roomId, setRoomId] = useState("");
   const [roomUuid, setRoomUuid] = useState<string | null>(null);
   const [joined, setJoined] = useState(false);
-  
+
   // Player States
   const [playerName, setPlayerName] = useState("");
   const [playerAvatar, setPlayerAvatar] = useState<string | null>(null);
   const [playerData, setPlayerData] = useState<any>(null);
   const [roomPlayers, setRoomPlayers] = useState<any[]>([]);
   const [actions, setActions] = useState<any[]>([]);
-  
+
   // UI Controls
   const [showNewPlayer, setShowNewPlayer] = useState(false);
   const [newPlayerName, setNewPlayerName] = useState("");
@@ -78,7 +79,7 @@ export default function Home() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [showManager, setShowManager] = useState(false);
-  const [savedRooms, setSavedRooms] = useState<{id: string, name: string}[]>([]);
+  const [savedRooms, setSavedRooms] = useState<{ id: string, name: string }[]>([]);
 
   // Realtime hook
   const { logs, sendRollRequest, saveRollResult, channel, activePlayers } = useSupabaseRealtime(
@@ -111,7 +112,7 @@ export default function Home() {
       .select("*")
       .eq("room_id", activeUuid)
       .eq("owner_name", targetPlayer);
-    
+
     if (data) {
       setActions(data.map(d => ({
         id: d.id,
@@ -150,35 +151,38 @@ export default function Home() {
     if (!newPlayerName.trim() || !roomUuid) return;
     setIsUploading(true);
     let uploadedUrl = null;
-    
+
     if (newPlayerFile) {
-       const fileExt = newPlayerFile.name.split('.').pop();
-       const fileName = `${roomUuid}-${Date.now()}.${fileExt}`;
-       const { error: uploadError } = await supabase.storage.from("avatars").upload(fileName, newPlayerFile);
-       if (!uploadError) {
-          uploadedUrl = supabase.storage.from("avatars").getPublicUrl(fileName).data.publicUrl;
-       }
+      const fileExt = newPlayerFile.name.split('.').pop();
+      const fileName = `${roomUuid}-${Date.now()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage.from("avatars").upload(fileName, newPlayerFile);
+      if (!uploadError) {
+        uploadedUrl = supabase.storage.from("avatars").getPublicUrl(fileName).data.publicUrl;
+      }
     }
-    
+
     const { data, error } = await supabase.from("players").insert({
-       room_id: roomUuid,
-       name: newPlayerName,
-       avatar_url: uploadedUrl
+      room_id: roomUuid,
+      name: newPlayerName,
+      avatar_url: uploadedUrl
     }).select().single();
-    
+
     setIsUploading(false);
     if (!error && data) {
-       handleSelectPlayer(data);
-       setShowNewPlayer(false);
+      handleSelectPlayer(data);
+      setShowNewPlayer(false);
     }
   };
 
   const handleImportActions = async (parsedCharacter: any, options?: any) => {
     if (!roomUuid) return;
-    
+
     const opt = options || { importStats: true, importProficiencies: true, importActions: true };
-    const updatePayload: any = { class_level: parsedCharacter.classLevel };
-    
+    const updatePayload: any = { 
+        class_level: parsedCharacter.classLevel,
+        name: parsedCharacter.name // Sync character name as well
+    };
+
     if (opt.importStats) {
       updatePayload.ac = parsedCharacter.ac;
       updatePayload.hp_current = parsedCharacter.hpCurrent;
@@ -187,7 +191,7 @@ export default function Home() {
       updatePayload.speed = parsedCharacter.speed;
       updatePayload.ability_scores = parsedCharacter.abilityScores;
     }
-    
+
     if (opt.importProficiencies) {
       updatePayload.proficiency_bonus = parsedCharacter.proficiencyBonus;
       updatePayload.skills = parsedCharacter.skills;
@@ -197,15 +201,17 @@ export default function Home() {
 
     const { data: updatedPlayer, error: playerError } = await supabase.from("players")
       .update(updatePayload)
-      .eq("room_id", roomUuid)
-      .eq("name", playerName)
+      .eq("id", playerData.id)
       .select()
       .single();
 
     if (playerError) {
       console.error("Failed to update player stats:", playerError);
+      alert("Failed to update character stats. Check console for details.");
     } else if (updatedPlayer) {
-      setPlayerData(updatedPlayer); // Update internal state immediately
+      setPlayerData(updatedPlayer);
+      setPlayerName(updatedPlayer.name); // Update the name state in case it changed
+      console.log("Character stats successfully imported!");
     }
 
     if (opt.importActions) {
@@ -215,17 +221,17 @@ export default function Home() {
         .select("id, name")
         .eq("room_id", roomUuid)
         .eq("owner_name", playerName);
-        
+
       const existingActionMap = new Map((existingActions || []).map((a: any) => [a.name, a.id]));
-      
+
       for (const a of parsedCharacter.actions) {
         if (existingActionMap.has(a.name)) {
           // Update existing weapon to prevent duplicates
           await supabase.from("actions").update({
-             attack_range: a.range,
-             hit_bonus: a.hitBonus,
-             damage_dice: a.damageDice,
-             notes: a.notes || undefined
+            attack_range: a.range,
+            hit_bonus: a.hitBonus,
+            damage_dice: a.damageDice,
+            notes: a.notes || undefined
           }).eq("id", existingActionMap.get(a.name));
         } else {
           // Insert new weapon
@@ -249,17 +255,17 @@ export default function Home() {
     let rollType: RollRequest['rollType'] = 'custom';
 
     if (!isDamage) {
-        if (type === 'adv') {
-            formula = `2d20kh1${mod >= 0 ? '+' : ''}${mod}`;
-            rollType = 'hit_adv';
-        } else if (type === 'dis') {
-            formula = `2d20kl1${mod >= 0 ? '+' : ''}${mod}`;
-            rollType = 'hit_disadv';
-        } else {
-            rollType = 'hit_normal';
-        }
+      if (type === 'adv') {
+        formula = `2d20kh1${mod >= 0 ? '+' : ''}${mod}`;
+        rollType = 'hit_adv';
+      } else if (type === 'dis') {
+        formula = `2d20kl1${mod >= 0 ? '+' : ''}${mod}`;
+        rollType = 'hit_disadv';
+      } else {
+        rollType = 'hit_normal';
+      }
     } else {
-        rollType = type === 'adv' ? 'damage_crit' : 'damage_normal';
+      rollType = type === 'adv' ? 'damage_crit' : 'damage_normal';
     }
 
     sendRollRequest({
@@ -343,17 +349,17 @@ export default function Home() {
       gain.connect(ctx.destination);
       if (type === "crit") {
         [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
-           const osc = ctx.createOscillator();
-           osc.type = "square";
-           osc.frequency.setValueAtTime(freq, ctx.currentTime + (i * 0.1));
-           const oscGain = ctx.createGain();
-           oscGain.gain.setValueAtTime(0, ctx.currentTime);
-           oscGain.gain.setValueAtTime(0.3, ctx.currentTime + (i * 0.1));
-           oscGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.5);
-           osc.connect(oscGain);
-           oscGain.connect(gain);
-           osc.start(ctx.currentTime + (i * 0.1));
-           osc.stop(ctx.currentTime + 1.5);
+          const osc = ctx.createOscillator();
+          osc.type = "square";
+          osc.frequency.setValueAtTime(freq, ctx.currentTime + (i * 0.1));
+          const oscGain = ctx.createGain();
+          oscGain.gain.setValueAtTime(0, ctx.currentTime);
+          oscGain.gain.setValueAtTime(0.3, ctx.currentTime + (i * 0.1));
+          oscGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.5);
+          osc.connect(oscGain);
+          oscGain.connect(gain);
+          osc.start(ctx.currentTime + (i * 0.1));
+          osc.stop(ctx.currentTime + 1.5);
         });
       } else {
         const osc = ctx.createOscillator();
@@ -367,7 +373,7 @@ export default function Home() {
         osc.start();
         osc.stop(ctx.currentTime + 1.5);
       }
-    } catch (e) {}
+    } catch (e) { }
   };
 
   const triggerSplash = (type: "crit" | "fail", pName?: string, pAvatar?: string | null) => {
@@ -411,78 +417,78 @@ export default function Home() {
     return (
       <main className="min-h-screen p-8 bg-cover bg-center bg-no-repeat relative overflow-hidden flex flex-col bg-fixed" style={{ backgroundImage: "url('/bg-fantasy.png')" }}>
         <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"></div>
-        
+
         <header className="relative z-10 flex flex-col items-center max-w-7xl mx-auto w-full mb-20 mt-10 text-center">
-            <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 mb-6 group hover:scale-105 transition-transform duration-500 shadow-2xl">
-                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/722.png" alt="Evil DM" className="w-24 h-24" />
-            </div>
-            <div>
-               <h1 className="text-5xl font-black text-white uppercase tracking-tighter mb-2 drop-shadow-2xl">EVIL DM&apos;s Tiny Hut</h1>
-               <p className="text-xs font-bold text-gold uppercase tracking-[0.5em] opacity-40">Digital Archives & Multidimensional Realms</p>
-            </div>
+          <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 mb-6 group hover:scale-105 transition-transform duration-500 shadow-2xl">
+            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/722.png" alt="Evil DM" className="w-24 h-24" />
+          </div>
+          <div>
+            <h1 className="text-5xl font-black text-white uppercase tracking-tighter mb-2 drop-shadow-2xl">EVIL DM&apos;s Tiny Hut</h1>
+            <p className="text-xs font-bold text-gold uppercase tracking-[0.5em] opacity-40">Digital Archives & Multidimensional Realms</p>
+          </div>
         </header>
 
         <div className="relative z-10 max-w-7xl mx-auto w-full flex-1">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
 
-                {/* Stored Realms */}
-                {savedRooms.map(r => (
-                    <div key={r.id} className="group relative bg-white/5 hover:bg-white/10 border border-white/10 p-8 rounded-[2.5rem] transition-all cursor-pointer overflow-hidden" 
-                        onClick={() => { 
-                            setRoomId(r.name); 
-                            setRoomUuid(r.id);
-                            setJoined(false); // Reset to choosing player
-                            setPlayerData(null);
-                        }}>
-                        <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button 
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    if(confirm(`Erase realm ${r.name}?`)) { supabase.from("rooms").delete().eq("id", r.id).then(() => fetchMetadata()); }
-                                }}
-                                className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-xl transition-all"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                            </button>
-                        </div>
-                        <div className="w-16 h-16 bg-white/5 rounded-2xl border border-white/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                            <Globe className="w-8 h-8 text-gold/40" />
-                        </div>
-                        <h4 className="text-2xl font-black text-white uppercase tracking-tighter mb-1">{r.name}</h4>
-                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Ancient Kingdom</p>
-                        
-                        <div className="mt-8 flex items-center gap-2 text-gold font-black text-[10px] uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
-                            ENTER REALM <Sparkles className="w-3 h-3" />
-                        </div>
-                    </div>
-                ))}
-            </div>
+            {/* Stored Realms */}
+            {savedRooms.map(r => (
+              <div key={r.id} className="group relative bg-white/5 hover:bg-white/10 border border-white/10 p-8 rounded-[2.5rem] transition-all cursor-pointer overflow-hidden"
+                onClick={() => {
+                  setRoomId(r.name);
+                  setRoomUuid(r.id);
+                  setJoined(false); // Reset to choosing player
+                  setPlayerData(null);
+                }}>
+                <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm(`Erase realm ${r.name}?`)) { supabase.from("rooms").delete().eq("id", r.id).then(() => fetchMetadata()); }
+                    }}
+                    className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-xl transition-all"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="w-16 h-16 bg-white/5 rounded-2xl border border-white/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                  <Globe className="w-8 h-8 text-gold/40" />
+                </div>
+                <h4 className="text-2xl font-black text-white uppercase tracking-tighter mb-1">{r.name}</h4>
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Ancient Kingdom</p>
+
+                <div className="mt-8 flex items-center gap-2 text-gold font-black text-[10px] uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
+                  ENTER REALM <Sparkles className="w-3 h-3" />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Global Join Realm at the Bottom */}
         <div className="relative z-10 max-w-xl mx-auto w-full mt-20 mb-10">
-            <div className="bg-black/20 backdrop-blur-3xl border border-white/10 p-2 rounded-[2rem] flex items-center gap-2">
-                <input 
-                    required 
-                    type="text" 
-                    className="flex-1 bg-transparent border-none rounded-2xl px-6 py-4 text-white outline-none placeholder:text-white/20" 
-                    value={roomId} 
-                    onChange={e => setRoomId(e.target.value)} 
-                    placeholder="Enter Realm Essence Name..." 
-                />
-                <button 
-                    onClick={handleJoinRoom}
-                    className="bg-gold text-darker font-black px-8 py-4 rounded-[1.5rem] shadow-lg shadow-gold/20 hover:scale-105 active:scale-95 transition-all uppercase text-xs"
-                >
-                    Begin Journey
-                </button>
-            </div>
-            <p className="text-[10px] text-center text-white/20 uppercase tracking-widest mt-4">or select an ancient realm from archives above</p>
+          <div className="bg-black/20 backdrop-blur-3xl border border-white/10 p-2 rounded-[2rem] flex items-center gap-2">
+            <input
+              required
+              type="text"
+              className="flex-1 bg-transparent border-none rounded-2xl px-6 py-4 text-white outline-none placeholder:text-white/20"
+              value={roomId}
+              onChange={e => setRoomId(e.target.value)}
+              placeholder="Enter Realm Essence Name..."
+            />
+            <button
+              onClick={handleJoinRoom}
+              className="bg-gold text-darker font-black px-8 py-4 rounded-[1.5rem] shadow-lg shadow-gold/20 hover:scale-105 active:scale-95 transition-all uppercase text-xs"
+            >
+              Begin Journey
+            </button>
+          </div>
+          <p className="text-[10px] text-center text-white/20 uppercase tracking-widest mt-4">or select an ancient realm from archives above</p>
         </div>
 
         <footer className="relative z-10 py-8 text-center">
-            <p className="text-[10px] font-bold text-gray-600 uppercase tracking-[0.4em]">Evil DM Tinyhut © 2026 • Crafted for Hexanriel</p>
+          <p className="text-[10px] font-bold text-gray-600 uppercase tracking-[0.4em]">Evil DM Tinyhut © 2026 • Crafted for Hexanriel</p>
         </footer>
       </main>
     );
@@ -491,34 +497,34 @@ export default function Home() {
   if (!joined) {
     return (
       <main className="min-h-screen p-8 flex flex-col items-center justify-center bg-[#050505]">
-        <button onClick={() => setRoomUuid(null)} className="absolute top-8 left-8 text-gray-400 flex items-center gap-2"><ChevronLeft className="w-4 h-4"/> BACK</button>
+        <button onClick={() => setRoomUuid(null)} className="absolute top-8 left-8 text-gray-400 flex items-center gap-2"><ChevronLeft className="w-4 h-4" /> BACK</button>
         <div className="w-full max-w-4xl">
-           <h2 className="text-4xl font-black text-white text-center mb-10 uppercase tracking-tighter">Choose Your Fate</h2>
-           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              {roomPlayers.map(p => (
-                <button key={p.id} onClick={() => handleSelectPlayer(p)} className="flex flex-col items-center gap-4 p-6 bg-white/5 border border-white/5 rounded-3xl hover:border-gold transition-all">
-                   <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-white/10">
-                      <img src={p.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.name}`} className="w-full h-full object-cover" alt="" />
-                   </div>
-                   <span className="font-bold text-white">{p.name}</span>
-                </button>
-              ))}
-              <button onClick={() => setShowNewPlayer(true)} className="flex flex-col items-center justify-center gap-4 p-6 bg-white/5 border-2 border-dashed border-white/5 rounded-3xl hover:border-gold">
-                 <UserPlus className="w-10 h-10 text-gray-600" />
-                 <span className="font-bold text-gray-600">NEW PLAYER</span>
+          <h2 className="text-4xl font-black text-white text-center mb-10 uppercase tracking-tighter">Choose Your Fate</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {roomPlayers.map(p => (
+              <button key={p.id} onClick={() => handleSelectPlayer(p)} className="flex flex-col items-center gap-4 p-6 bg-white/5 border border-white/5 rounded-3xl hover:border-gold transition-all">
+                <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-white/10">
+                  <img src={p.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.name}`} className="w-full h-full object-cover" alt="" />
+                </div>
+                <span className="font-bold text-white">{p.name}</span>
               </button>
-           </div>
+            ))}
+            <button onClick={() => setShowNewPlayer(true)} className="flex flex-col items-center justify-center gap-4 p-6 bg-white/5 border-2 border-dashed border-white/5 rounded-3xl hover:border-gold">
+              <UserPlus className="w-10 h-10 text-gray-600" />
+              <span className="font-bold text-gray-600">NEW PLAYER</span>
+            </button>
+          </div>
         </div>
         {showNewPlayer && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4">
-             <div className="bg-card p-10 rounded-[3rem] w-full max-w-md border border-white/10 shadow-2xl">
-                <h3 className="text-2xl font-black text-white mb-8">SUMMON HERO</h3>
-                <form onSubmit={handleCreatePlayer} className="space-y-6">
-                   <input required type="text" className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white" value={newPlayerName} onChange={e => setNewPlayerName(e.target.value)} placeholder="Hero Name..." />
-                   <button disabled={isUploading} type="submit" className="w-full bg-gold font-black py-4 rounded-2xl text-darker">{isUploading ? "SUMMONING..." : "ENTER REALM"}</button>
-                   <button type="button" onClick={() => setShowNewPlayer(false)} className="w-full text-gray-500 font-bold text-sm">CANCEL</button>
-                </form>
-             </div>
+            <div className="bg-card p-10 rounded-[3rem] w-full max-w-md border border-white/10 shadow-2xl">
+              <h3 className="text-2xl font-black text-white mb-8">SUMMON HERO</h3>
+              <form onSubmit={handleCreatePlayer} className="space-y-6">
+                <input required type="text" className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white" value={newPlayerName} onChange={e => setNewPlayerName(e.target.value)} placeholder="Hero Name..." />
+                <button disabled={isUploading} type="submit" className="w-full bg-gold font-black py-4 rounded-2xl text-darker">{isUploading ? "SUMMONING..." : "ENTER REALM"}</button>
+                <button type="button" onClick={() => setShowNewPlayer(false)} className="w-full text-gray-500 font-bold text-sm">CANCEL</button>
+              </form>
+            </div>
           </div>
         )}
       </main>
@@ -529,68 +535,69 @@ export default function Home() {
     <main className="min-h-screen p-4 md:p-8 relative pb-24 transition-all duration-1000 bg-cover bg-center" style={{ backgroundImage: bgTheme ? `url('${bgTheme}')` : 'none', color: fontTheme }}>
       <div className="absolute inset-0 bg-black/25 pointer-events-none z-0 backdrop-brightness-[1.1]"></div>
       <DiceCanvas channel={channel} playerName={playerName} themeColor={themeColor} onRollComplete={res => saveRollResult({ ...res, resultDetails: { ...res.resultDetails, player_avatar: playerAvatar } })} />
-      
+
       <header className="mb-8 flex justify-between items-center relative z-10">
         <div className="flex items-center gap-4">
           <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/722.png" alt="Tinyhut" className="w-12 h-12" />
           <h1 className="text-2xl font-black uppercase tracking-tighter italic">{roomId}</h1>
         </div>
         <div className="flex items-center gap-4">
-           {activePlayers.map(p => (
-             <div key={p.name} className="flex items-center gap-2 bg-black/40 border border-white/10 rounded-full pr-3">
-                <img src={p.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.name}`} className="w-8 h-8 rounded-full border border-white/10" alt="" />
-                <span className={`text-xs font-bold ${p.name === playerName ? 'text-gold' : 'text-white'}`}>{p.name}</span>
-             </div>
-           ))}
-           <button onClick={() => setShowThemePicker(!showThemePicker)} className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors"><Paintbrush className="w-5 h-5"/></button>
-           <button onClick={() => setShowColorPicker(!showColorPicker)} className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors"><Palette className="w-5 h-5"/></button>
+          {activePlayers.map(p => (
+            <div key={p.name} className="flex items-center gap-2 bg-black/40 border border-white/10 rounded-full pr-3">
+              <img src={p.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.name}`} className="w-8 h-8 rounded-full border border-white/10" alt="" />
+              <span className={`text-xs font-bold ${p.name === playerName ? 'text-gold' : 'text-white'}`}>{p.name}</span>
+            </div>
+          ))}
+          <button onClick={() => setShowThemePicker(!showThemePicker)} className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors"><Paintbrush className="w-5 h-5" /></button>
+          <button onClick={() => setShowColorPicker(!showColorPicker)} className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors"><Palette className="w-5 h-5" /></button>
         </div>
       </header>
 
       {showThemePicker && (
         <div className="fixed top-24 right-8 z-[100] bg-black/90 backdrop-blur-xl border border-white/10 p-6 rounded-[2rem] shadow-2xl w-80">
-           <h3 className="text-xs font-black text-rose-400 mb-4 tracking-widest">WORLD SETTINGS</h3>
-           <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto">
-             {BG_PRESETS.map(bg => (
-                <button key={bg.name} onClick={() => setBgTheme(bg.url)} className={`h-16 rounded-xl border-2 overflow-hidden ${bgTheme === bg.url ? 'border-gold' : 'border-transparent'}`}>
-                   {bg.url ? <img src={bg.url} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full bg-white/5 flex items-center justify-center text-[8px]">VOID</div>}
-                </button>
-             ))}
-           </div>
-           <div className="mt-6 flex gap-2">
-              {FONT_PRESETS.map(f => <button key={f.name} onClick={() => setFontTheme(f.color)} className="w-6 h-6 rounded-full border border-white/10" style={{ backgroundColor: f.color }} />)}
-           </div>
+          <h3 className="text-xs font-black text-rose-400 mb-4 tracking-widest">WORLD SETTINGS</h3>
+          <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto">
+            {BG_PRESETS.map(bg => (
+              <button key={bg.name} onClick={() => setBgTheme(bg.url)} className={`h-16 rounded-xl border-2 overflow-hidden ${bgTheme === bg.url ? 'border-gold' : 'border-transparent'}`}>
+                {bg.url ? <img src={bg.url} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full bg-white/5 flex items-center justify-center text-[8px]">VOID</div>}
+              </button>
+            ))}
+          </div>
+          <div className="mt-6 flex gap-2">
+            {FONT_PRESETS.map(f => <button key={f.name} onClick={() => setFontTheme(f.color)} className="w-6 h-6 rounded-full border border-white/10" style={{ backgroundColor: f.color }} />)}
+          </div>
         </div>
       )}
 
       {showColorPicker && (
-         <div className="fixed top-24 right-8 z-[100] bg-black/90 backdrop-blur-xl border border-white/10 p-6 rounded-[2rem] shadow-2xl w-64">
-            <h3 className="text-xs font-black text-cyan-400 mb-4 tracking-widest">DICE SORCERY</h3>
-            <div className="grid grid-cols-2 gap-2">
-              {DICE_COLORS.map(c => <button key={c.name} onClick={() => setThemeColor(c.hex)} className="w-full h-10 rounded-xl border border-white/10" style={{ backgroundColor: c.hex }} title={c.name} />)}
-            </div>
-         </div>
+        <div className="fixed top-24 right-8 z-[100] bg-black/90 backdrop-blur-xl border border-white/10 p-6 rounded-[2rem] shadow-2xl w-64">
+          <h3 className="text-xs font-black text-cyan-400 mb-4 tracking-widest">DICE SORCERY</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {DICE_COLORS.map(c => <button key={c.name} onClick={() => setThemeColor(c.hex)} className="w-full h-10 rounded-xl border border-white/10" style={{ backgroundColor: c.hex }} title={c.name} />)}
+          </div>
+        </div>
       )}
 
       <div className="relative z-10">
-          <BeyondDashboard 
-            player={playerData}
-            actions={actions}
-            playerName={playerName}
-            onRoll={handleRoll}
-            onAddCustomAction={handleAddCustomAction}
-            onUpdateAction={handleUpdateAction}
-            onDeleteAction={handleDeleteAction}
-            onImportActions={handleImportActions}
-            onUpdateHp={handleUpdateHp}
-            onUpdateAvatar={handleUpdateAvatar}
-          />
+        <BeyondDashboard
+          player={playerData}
+          actions={actions}
+          playerName={playerName}
+          onRoll={handleRoll}
+          onAddCustomAction={handleAddCustomAction}
+          onUpdateAction={handleUpdateAction}
+          onDeleteAction={handleDeleteAction}
+          onImportActions={handleImportActions}
+          onUpdateHp={handleUpdateHp}
+          onUpdateAvatar={handleUpdateAvatar}
+        />
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 p-4 flex gap-4 pointer-events-none z-[40]">
-        <div className="w-fit pointer-events-auto">
-          <HistoryLog logs={logs} />
-        </div>
+      <FloatingWidget title="Roll History" storageKey="roll-log" defaultPosition={{ x: 20, y: 120 }}>
+        <HistoryLog logs={logs} />
+      </FloatingWidget>
+
+      <div className="fixed bottom-0 left-0 right-0 p-4 flex justify-end pointer-events-none z-[40]">
         <div className="pointer-events-auto">
           <QuickRoller playerName={playerName} onRoll={handleQuickRoll} />
         </div>
@@ -600,19 +607,19 @@ export default function Home() {
         <div className="fixed inset-0 z-[1000] flex items-center justify-center pointer-events-none animate-in fade-in duration-500">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
           <div className="relative flex flex-col items-center animate-in zoom-in spin-in-1 duration-1000">
-             <div className="relative mb-4">
-                <div className={`absolute -inset-8 rounded-full blur-2xl opacity-50 ${splashAnimation.type === 'crit' ? 'bg-gold animate-pulse' : 'bg-red-600'}`}></div>
-                <img 
-                  src={splashAnimation.playerAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${splashAnimation.playerName}`} 
-                  className="w-40 h-40 rounded-full border-4 border-white/20 relative z-10 shadow-2xl" 
-                  alt="" 
-                />
-                <div className={`absolute -bottom-4 left-1/2 -translate-x-1/2 px-6 py-2 rounded-full font-black text-xl z-20 shadow-xl ${splashAnimation.type === 'crit' ? 'bg-gold text-darker' : 'bg-red-600 text-white'}`}>
-                  {splashAnimation.type === 'crit' ? 'NATURAL 20!' : 'NATURAL 1...'}
-                </div>
-             </div>
-             <p className="text-3xl font-black text-white italic drop-shadow-2xl text-center max-w-lg px-4">{splashAnimation.message}</p>
-             <p className="text-gold font-bold uppercase tracking-widest mt-2">{splashAnimation.playerName}</p>
+            <div className="relative mb-4">
+              <div className={`absolute -inset-8 rounded-full blur-2xl opacity-50 ${splashAnimation.type === 'crit' ? 'bg-gold animate-pulse' : 'bg-red-600'}`}></div>
+              <img
+                src={splashAnimation.playerAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${splashAnimation.playerName}`}
+                className="w-40 h-40 rounded-full border-4 border-white/20 relative z-10 shadow-2xl"
+                alt=""
+              />
+              <div className={`absolute -bottom-4 left-1/2 -translate-x-1/2 px-6 py-2 rounded-full font-black text-xl z-20 shadow-xl ${splashAnimation.type === 'crit' ? 'bg-gold text-darker' : 'bg-red-600 text-white'}`}>
+                {splashAnimation.type === 'crit' ? 'NATURAL 20!' : 'NATURAL 1...'}
+              </div>
+            </div>
+            <p className="text-3xl font-black text-white italic drop-shadow-2xl text-center max-w-lg px-4">{splashAnimation.message}</p>
+            <p className="text-gold font-bold uppercase tracking-widest mt-2">{splashAnimation.playerName}</p>
           </div>
         </div>
       )}

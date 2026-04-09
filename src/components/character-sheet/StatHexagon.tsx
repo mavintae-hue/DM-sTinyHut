@@ -5,12 +5,15 @@ interface StatHexagonProps {
   score: number;
   modifier: number;
   onRoll: (label: string, mod: number, type: 'normal' | 'adv' | 'dis') => void;
+  editable?: boolean;
+  onUpdate?: (score: number) => void;
 }
 
-export default function StatHexagon({ label, score, modifier, onRoll }: StatHexagonProps) {
+export default function StatHexagon({ label, score, modifier, onRoll, editable, onUpdate }: StatHexagonProps) {
   const modText = modifier >= 0 ? `+${modifier}` : modifier.toString();
 
   const handleContextMenu = (e: React.MouseEvent) => {
+    if (editable) return;
     e.preventDefault();
     // Signal for context menu (will be handled by parent container)
     const event = new CustomEvent('open-roll-menu', {
@@ -27,8 +30,8 @@ export default function StatHexagon({ label, score, modifier, onRoll }: StatHexa
 
   return (
     <div 
-      className="relative w-24 h-28 group cursor-pointer select-none active:scale-95 transition-all"
-      onClick={() => onRoll(label, modifier, 'normal')}
+      className={`relative w-24 h-28 group select-none active:scale-95 transition-all ${editable ? '' : 'cursor-pointer'}`}
+      onClick={() => (!editable && onRoll(label, modifier, 'normal'))}
       onContextMenu={handleContextMenu}
     >
       {/* Hexagon Background SVG */}
@@ -58,9 +61,18 @@ export default function StatHexagon({ label, score, modifier, onRoll }: StatHexa
       </div>
 
       <div className="absolute bottom-1 left-0 right-0 text-center">
-        <span className="text-[14px] font-bold text-gray-300">
-          {score}
-        </span>
+        {editable ? (
+          <input 
+            type="number"
+            className="w-12 bg-transparent text-[14px] font-bold text-white text-center border-b border-white/20 outline-none focus:border-cyan-400 transition-colors"
+            value={score}
+            onChange={(e) => onUpdate?.(parseInt(e.target.value) || 0)}
+          />
+        ) : (
+          <span className="text-[14px] font-bold text-gray-300">
+            {score}
+          </span>
+        )}
       </div>
     </div>
   );

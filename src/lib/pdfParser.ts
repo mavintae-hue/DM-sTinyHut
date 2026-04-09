@@ -64,9 +64,17 @@ export async function parseDnDBeyondPdf(file: File): Promise<ParsedCharacter> {
     senses: {}
   };
 
-  // Helper to find annotation by name regex or exact string
+  // Helper to find annotation by name (robustly)
   const getAnn = (name: string | RegExp) => {
-    const ann = annotations.find(a => a.fieldName && (typeof name === 'string' ? a.fieldName === name : name.test(a.fieldName)));
+    const ann = annotations.find(a => {
+      if (!a.fieldName) return false;
+      const field = a.fieldName.trim();
+      if (typeof name === 'string') {
+        const target = name.trim();
+        return field === target || field.toLowerCase() === target.toLowerCase();
+      }
+      return name.test(field);
+    });
     return ann ? ann.fieldValue || "" : "";
   };
 
@@ -104,15 +112,18 @@ export async function parseDnDBeyondPdf(file: File): Promise<ParsedCharacter> {
   extractScore('cha', 'CHA');
 
   // --- Extract Weapons (Actions) ---
-  // Weapons usually follow Wpn Name, Wpn1 AtkBonus, Wpn1 Damage
   for (let i = 1; i <= 10; i++) {
-     const nameKey = i === 1 ? "Wpn Name" : `Wpn Name ${i}`;
-     const wpnName = getAnn(nameKey);
+     const wpnName = getAnn(`Wpn Name ${i}`) || (i === 1 ? getAnn("Wpn Name") : "");
      
      if (wpnName) {
-        const hitBonus = parseInt(getAnn(`Wpn${i} AtkBonus`).replace(/[^-0-9]/g, '')) || 0;
-        const damage = getAnn(`Wpn${i} Damage`) || "0";
-        const notes = getAnn(`Wpn Notes ${i}`) || "";
+        // Try multiple attack bonus patterns due to variable spacing in PDFs
+        const hitVal = getAnn(`Wpn${i} AtkBonus`) || getAnn(`Wpn ${i} AtkBonus`) || getAnn(new RegExp(`Wpn.*${i}.*AtkBonus`, 'i'));
+        const hitBonus = parseInt(hitVal.replace(/[^-0-9]/g, '')) || 0;
+        
+        const damageVal = getAnn(`Wpn${i} Damage`) || getAnn(`Wpn ${i} Damage`) || getAnn(new RegExp(`Wpn.*${i}.*Damage`, 'i'));
+        const damage = damageVal || "0";
+        
+        const notes = getAnn(`Wpn Notes ${i}`) || getAnn(new RegExp(`Wpn.*Notes.*${i}`, 'i')) || "";
         
         // Try to identify range vs melee from notes or name
         let rangeType = "Melee";
@@ -135,12 +146,41 @@ export async function parseDnDBeyondPdf(file: File): Promise<ParsedCharacter> {
   // --- Extract Skills ---
   const skillList = ["Acrobatics", "Animal", "Arcana", "Athletics", "Deception", "History", "Insight", "Intimidation", "Investigation", "Medicine", "Nature", "Perception", "Performance", "Persuasion", "Religion", "SleightofHand", "Stealth", "Survival"];
   skillList.forEach(skill => {
-      const val = getAnn(skill);
+      const val = getAnn(skill) || getAnn(new RegExp(`^${skill}`, 'i'));
       if (val) {
           result.skills.push({
               name: skill === "Animal" ? "Animal Handling" : skill === "SleightofHand" ? "Sleight of Hand" : skill,
               modifier: parseInt(val.replace(/[^-0-9]/g, '')) || 0,
-              isProficient: !!getAnn(`${skill}Prof`)
+              isProficient: !!getAnn(`${skill}Prof`) || getAnn(`${skill.replace(/\s/g, '')}Prof`) !== ""
+          });
+      }
+  });
+
+  // --- Extract Saving Throws ---
+  const saveList = [
+    { key: "str", name: "Strength" },
+    { key: "dex", name: "Dexterity" },
+    { key: "con", name: "Constitution" },
+    { key: "int", name: "Intelligence" },
+    { key: "wis", name: "Wisdom" },
+    { key: "cha", name: "Charisma" }
+  ];
+  saveList.forEach(save => {
+      // Try multiple common D&D Beyond field patterns for Saving Throws
+      const val = getAnn(`ST ${save.name}`) || getAnn(`${save.name} ST`) || getAnn(`${save.key.toUpperCase()} ST`);
+      
+      if (val) {
+          // Try multiple common patterns for Saving Throw Proficiency
+          const prof = getAnn(`ST ${save.name} Prof`) || 
+                       getAnn(`${save.name} ST Prof`) || 
+                       getAnn(`Check Box ${save.name} ST`) || 
+                       getAnn(`${save.key.charAt(0).toUpperCase()}${save.key.slice(1)}Prof`) ||
+                       getAnn(`${save.name.substring(0, 3)}Prof`);
+          
+          result.saves.push({
+              name: save.name,
+              modifier: parseInt(val.replace(/[^-0-9]/g, '')) || 0,
+              isProficient: !!prof && !["Off", "No", ""].includes(prof.toString().trim())
           });
       }
   });

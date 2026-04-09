@@ -62,23 +62,23 @@ export default function BeyondDashboard({
   if (!player) return null;
 
   return (
-    <div className="w-full max-w-[1700px] mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="w-full max-w-[1700px] mx-auto space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Top Header Bar */}
-      <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between p-8 bg-[#151515]/80 backdrop-blur-xl border border-white/5 rounded-[2.5rem] shadow-2xl">
-        <div className="flex items-center gap-6">
+      <div className="flex flex-col md:flex-row gap-3 items-start md:items-center justify-between p-4 bg-[#151515]/80 backdrop-blur-xl border border-white/5 rounded-[2rem] shadow-2xl">
+          <div className="flex items-center gap-4">
           <div className="relative group cursor-pointer" onClick={() => setShowAvatarModal(true)}>
             <div className="absolute -inset-1 bg-gradient-to-tr from-cyan-500 to-blue-600 rounded-full blur opacity-25 group-hover:opacity-100 transition duration-500"></div>
-            <div className="relative w-20 h-20">
+            <div className="relative w-14 h-14">
               <img
                 src={player.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${player.name}`}
                 className="w-full h-full rounded-full border-2 border-white/10 object-cover bg-darker shadow-inner transition-transform group-hover:scale-95"
                 alt="Avatar"
               />
               <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                <Camera className="w-6 h-6 text-white" />
+                <Camera className="w-4 h-4 text-white" />
               </div>
             </div>
-            <div className="absolute -bottom-1 -right-1 bg-darker border border-white/10 px-2 py-0.5 rounded-full text-[8px] font-bold text-gray-400">
+            <div className="absolute -bottom-1 -right-1 bg-darker border border-white/10 px-1.5 py-0.5 rounded-full text-[8px] font-bold text-gray-400">
               LVL {player.class_level?.match(/\d+/)?.[0] || '??'}
             </div>
           </div>
@@ -98,14 +98,14 @@ export default function BeyondDashboard({
               </div>
             ) : (
               <>
-                <h1 className="text-4xl font-black text-white tracking-tighter mb-1">{player.name}</h1>
-                <p className="text-sm font-bold text-cyan-400 uppercase tracking-widest opacity-80">{player.class_level || 'Adventurer'}</p>
+                <h1 className="text-2xl font-black text-white tracking-tighter mb-0.5">{player.name}</h1>
+                <p className="text-xs font-bold text-cyan-400 uppercase tracking-widest opacity-80">{player.class_level || 'Adventurer'}</p>
               </>
             )}
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-4 items-center">
+        <div className="flex flex-wrap gap-2 items-center">
           <button 
             onClick={() => setIsEditMode(!isEditMode)}
             className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-xs font-black transition-all ${isEditMode ? 'bg-red-500 text-white shadow-lg shadow-red-500/20' : 'bg-gold text-darker shadow-lg shadow-gold/20 hover:scale-105 active:scale-95'}`}
@@ -115,9 +115,8 @@ export default function BeyondDashboard({
           <div className="w-px h-10 bg-white/5 mx-2 hidden md:block"></div>
 
           <CombatBox
-            label="Armor Class"
+            label="AC"
             value={player.ac || 10}
-            subValue="Shield Ready"
             accent="cyan"
             editable={isEditMode}
             onUpdate={(val) => onUpdatePlayer({ ac: parseInt(val as string) || 0 })}
@@ -137,7 +136,7 @@ export default function BeyondDashboard({
             editable={isEditMode}
             onUpdate={(val) => onUpdatePlayer({ speed: val as string })}
           />
-          <div className="relative group flex flex-col items-center justify-center p-4 bg-[#1a1a1a] border border-red-500/30 rounded-2xl shadow-xl min-w-[140px] h-24">
+          <div className="relative group flex flex-col items-center justify-center p-3 bg-[#1a1a1a] border border-red-500/30 rounded-2xl shadow-xl min-w-[120px] h-20">
             <span className="text-[8px] font-black opacity-50 uppercase tracking-widest mb-1 text-red-400">Hit Points</span>
             <div className="flex items-baseline gap-1">
               <input
@@ -163,11 +162,11 @@ export default function BeyondDashboard({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
         {/* Left Column: Stats & Saves */}
-        <div className="lg:col-span-3 space-y-6">
-          <div className="bg-[#151515]/60 backdrop-blur-md border border-white/5 rounded-[2rem] p-6 shadow-xl">
-            <div className="grid grid-cols-2 gap-x-2 gap-y-4 justify-items-center">
+        <div className="lg:col-span-3 space-y-3">
+          <div className="bg-[#151515]/60 backdrop-blur-md border border-white/5 rounded-[1.5rem] p-4 shadow-xl">
+            <div className="grid grid-cols-2 gap-x-2 gap-y-2 justify-items-center">
               <StatHexagon label="STR" score={player.ability_scores?.str || 10} modifier={getMod(player.ability_scores?.str || 10)} onRoll={onRoll} editable={isEditMode} onUpdate={(score) => onUpdatePlayer({ ability_scores: { ...player.ability_scores, str: score } })} />
               <StatHexagon label="DEX" score={player.ability_scores?.dex || 10} modifier={getMod(player.ability_scores?.dex || 10)} onRoll={onRoll} editable={isEditMode} onUpdate={(score) => onUpdatePlayer({ ability_scores: { ...player.ability_scores, dex: score } })} />
               <StatHexagon label="CON" score={player.ability_scores?.con || 10} modifier={getMod(player.ability_scores?.con || 10)} onRoll={onRoll} editable={isEditMode} onUpdate={(score) => onUpdatePlayer({ ability_scores: { ...player.ability_scores, con: score } })} />
@@ -176,8 +175,8 @@ export default function BeyondDashboard({
               <StatHexagon label="CHA" score={player.ability_scores?.cha || 10} modifier={getMod(player.ability_scores?.cha || 10)} onRoll={onRoll} editable={isEditMode} onUpdate={(score) => onUpdatePlayer({ ability_scores: { ...player.ability_scores, cha: score } })} />
             </div>
           </div>
-          <div className="bg-[#151515]/60 block border border-white/5 rounded-[2rem] p-6 shadow-xl">
-            <h3 className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] mb-4 ml-2">Saving Throws</h3>
+          <div className="bg-[#151515]/60 block border border-white/5 rounded-[1.5rem] p-4 shadow-xl">
+            <h3 className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] mb-2 ml-1">Saving Throws</h3>
             <div className="space-y-1">
               {(player.saves && player.saves.length === 6 ? player.saves : [
                 { name: "Strength", modifier: getMod(player.ability_scores?.str || 10), isProficient: false },
@@ -219,9 +218,9 @@ export default function BeyondDashboard({
         </div>
 
         {/* Middle Column: Skills & Senses */}
-        <div className="lg:col-span-4 space-y-6">
-          <div className="bg-[#151515]/60 border border-white/5 rounded-[2rem] p-6 shadow-xl max-h-[600px] overflow-hidden flex flex-col">
-            <div className="flex justify-between items-center mb-4 ml-2 flex-shrink-0">
+        <div className="lg:col-span-4 space-y-3">
+          <div className="bg-[#151515]/60 border border-white/5 rounded-[1.5rem] p-4 shadow-xl max-h-[500px] overflow-hidden flex flex-col">
+            <div className="flex justify-between items-center mb-2 ml-1 flex-shrink-0">
               <h3 className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Skills</h3>
               {isEditMode ? (
                 <div className="flex items-center gap-2">
@@ -259,7 +258,7 @@ export default function BeyondDashboard({
 
           {/* Senses Panel */}
           {player.senses && Object.keys(player.senses).length > 0 && (
-            <div className="bg-[#151515]/60 border border-white/5 rounded-[2rem] p-6 shadow-xl">
+            <div className="bg-[#151515]/60 border border-white/5 rounded-[1.5rem] p-4 shadow-xl">
               <h3 className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] mb-4 ml-2 flex items-center gap-2">
                 <Search className="w-3 h-3" /> Senses
               </h3>
@@ -286,8 +285,8 @@ export default function BeyondDashboard({
         </div>
 
         {/* Right Column: Actions Dashboard */}
-        <div className="lg:col-span-5 space-y-6">
-          <div className="flex gap-2 p-1 bg-white/5 rounded-2xl border border-white/5 w-fit mb-4">
+        <div className="lg:col-span-5 space-y-3">
+          <div className="flex gap-2 p-1 bg-white/5 rounded-2xl border border-white/5 w-fit mb-2">
             <button
               onClick={() => setActiveTab('actions')}
               className={`flex items-center gap-2 px-6 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'actions' ? 'bg-gold text-darker shadow-lg' : 'text-gray-400 hover:text-white'}`}

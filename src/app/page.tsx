@@ -473,7 +473,7 @@ export default function Home() {
       <div className="absolute inset-0 bg-black/40 pointer-events-none z-0 backdrop-brightness-[1.1]"></div>
 
       <div className="flex-1 flex flex-col h-full relative transition-all duration-500 ease-in-out overflow-hidden">
-        <header className="p-4 md:p-8 flex justify-between items-center relative z-10 w-full max-w-[1700px] mx-auto shrink-0">
+        <header className="p-2 md:p-4 flex justify-between items-center relative z-10 w-full max-w-[1700px] mx-auto shrink-0">
           <div className="flex items-center gap-4">
             <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/722.png" alt="Tinyhut" className="w-12 h-12" />
             <h1 className="text-2xl font-black uppercase tracking-tighter italic">{roomId}</h1>
@@ -519,8 +519,8 @@ export default function Home() {
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
-          <div className="w-full max-w-[1700px] mx-auto pb-24">
+        <div className="flex-1 overflow-y-auto p-2 md:p-4 custom-scrollbar">
+          <div className="w-full max-w-[1700px] mx-auto">
             <BeyondDashboard
               player={playerData}
               actions={actions}
@@ -537,18 +537,17 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="fixed bottom-0 left-0 p-6 flex justify-start pointer-events-none z-[40]">
-           <div className="pointer-events-auto">
-             <QuickRoller playerName={playerName} onRoll={handleQuickRoll} />
-           </div>
+        {/* QuickRoller - now inline at bottom of content area */}
+        <div className="p-2 md:p-4 border-t border-white/5 bg-black/20 shrink-0">
+          <div className="w-full max-w-[1700px] mx-auto">
+            <QuickRoller playerName={playerName} onRoll={handleQuickRoll} />
+          </div>
         </div>
       </div>
 
-      {/* Persistent Roll Log in the same layer */}
-      <aside className="w-full md:w-[420px] bg-[#080808]/95 backdrop-blur-3xl border-l border-white/5 overflow-hidden flex flex-col z-20 relative">
-        <div className="h-full flex flex-col relative overflow-hidden">
-          <HistoryLog logs={logs} />
-        </div>
+      {/* Persistent Roll Log sidebar - fixed height, internal scroll */}
+      <aside className="hidden md:flex w-[320px] lg:w-[360px] bg-[#080808]/95 backdrop-blur-3xl border-l border-white/5 flex-col z-20 h-screen overflow-hidden">
+        <HistoryLog logs={logs} />
       </aside>
 
       {splashAnimation && (

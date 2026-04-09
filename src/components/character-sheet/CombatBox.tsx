@@ -31,7 +31,7 @@ export default function CombatBox({ label, value, subValue, onRoll, accent = 'cy
 
   return (
     <div 
-      className={`relative flex flex-col items-center justify-center p-4 bg-[#1a1a1a] border ${accentColor} rounded-2xl shadow-xl min-w-[100px] h-24 ${(onRoll && !editable) ? 'cursor-pointer active:scale-95 transition-all hover:bg-white/5 hover:border-cyan-400/60' : ''} group`}
+      className={`relative flex flex-col items-center justify-center p-2.5 bg-[#1a1a1a] border ${accentColor} rounded-xl shadow-xl min-w-[80px] h-[72px] ${(onRoll && !editable) ? 'cursor-pointer active:scale-95 transition-all hover:bg-white/5 hover:border-cyan-400/60' : ''} group`}
       onClick={() => (!editable && onRoll?.('normal'))}
       onContextMenu={handleContextMenu}
     >
@@ -45,7 +45,7 @@ export default function CombatBox({ label, value, subValue, onRoll, accent = 'cy
           autoFocus
         />
       ) : (
-        <span className="text-3xl font-black tracking-tighter">{value}</span>
+        <span className="text-2xl font-black tracking-tighter">{value}</span>
       )}
       {subValue && <span className="text-[10px] font-bold opacity-40 mt-1 uppercase">{subValue}</span>}
     </div>

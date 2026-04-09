@@ -30,7 +30,7 @@ export default function StatHexagon({ label, score, modifier, onRoll, editable, 
 
   return (
     <div 
-      className={`relative w-24 h-28 group select-none active:scale-95 transition-all ${editable ? '' : 'cursor-pointer'}`}
+      className={`relative w-20 h-24 group select-none active:scale-95 transition-all ${editable ? '' : 'cursor-pointer'}`}
       onClick={() => (!editable && onRoll(label, modifier, 'normal'))}
       onContextMenu={handleContextMenu}
     >
@@ -52,10 +52,10 @@ export default function StatHexagon({ label, score, modifier, onRoll, editable, 
       </svg>
 
       <div className="absolute inset-0 flex flex-col items-center justify-center pb-6 group-hover:scale-110 transition-transform duration-300">
-        <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-1 group-hover:text-cyan-400/80 transition-colors">
+        <span className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] mb-0.5 group-hover:text-cyan-400/80 transition-colors">
           {label}
         </span>
-        <span className="text-3xl font-black text-white group-hover:text-cyan-400 transition-colors drop-shadow-lg">
+        <span className="text-2xl font-black text-white group-hover:text-cyan-400 transition-colors drop-shadow-lg">
           {modText}
         </span>
       </div>
@@ -69,7 +69,7 @@ export default function StatHexagon({ label, score, modifier, onRoll, editable, 
             onChange={(e) => onUpdate?.(parseInt(e.target.value) || 0)}
           />
         ) : (
-          <span className="text-[14px] font-bold text-gray-300">
+          <span className="text-xs font-bold text-gray-300">
             {score}
           </span>
         )}

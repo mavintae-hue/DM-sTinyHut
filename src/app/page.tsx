@@ -199,6 +199,8 @@ export default function Home() {
       updatePayload.senses = parsedCharacter.senses;
     }
 
+    console.log("[Import] Sending update payload to Supabase:", updatePayload);
+
     const { data: updatedPlayer, error: playerError } = await supabase.from("players")
       .update(updatePayload)
       .eq("id", playerData.id)
@@ -211,7 +213,8 @@ export default function Home() {
     } else if (updatedPlayer) {
       setPlayerData(updatedPlayer);
       setPlayerName(updatedPlayer.name); // Update the name state in case it changed
-      console.log("Character stats successfully imported!");
+      console.log("Character stats successfully imported!", updatedPlayer);
+      alert(`Import Successful! ${updatedPlayer.name}'s stats have been updated.`);
     }
 
     if (opt.importActions) {

@@ -40,11 +40,15 @@ export async function parseDnDBeyondPdf(file: File): Promise<ParsedCharacter> {
   const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
   const pdf = await loadingTask.promise;
   
+  console.log("Analyzing PDF character sheet...");
   const page = await pdf.getPage(1);
   const annotations = await page.getAnnotations();
-  // Get text content as fallback for AC/Speed sometimes
+  console.log(`Found ${annotations.length} fields/annotations.`);
+  
+  // Get text content as fallback for AC/HP/Speed
   const textContent = await page.getTextContent();
-  const items = textContent.items as any[];
+  const textItems = (textContent.items as any[]).map(item => item.str).join(" ");
+  console.log("Full text content length:", textItems.length);
 
   // Define the result object
   const result: ParsedCharacter = {
@@ -75,7 +79,13 @@ export async function parseDnDBeyondPdf(file: File): Promise<ParsedCharacter> {
       }
       return name.test(field);
     });
-    return ann ? ann.fieldValue || "" : "";
+    
+    if (!ann) return "";
+    
+    // Some field values are stored in different properties depending on the PDF structure
+    const val = (ann.fieldValue || ann.buttonValue || ann.exportValue || "").toString();
+    if (val) console.log(`[Parser] Match found for ${name}: ${val}`);
+    return val;
   };
 
   // --- Extract Identity ---
@@ -86,10 +96,21 @@ export async function parseDnDBeyondPdf(file: File): Promise<ParsedCharacter> {
   // --- Extract Core Stats ---
   const hpRaw = getAnn("MaxHP") || getAnn(/hp.*max/i);
   result.hpMax = parseInt(hpRaw) || 10;
+  
+  // Fallback for HP from text
+  if (result.hpMax === 10) {
+    const hpMatch = textItems.match(/(\d+)\s*\/\s*(\d+)/); // Look for HP like "120/120"
+    if (hpMatch) result.hpMax = parseInt(hpMatch[2]) || 10;
+  }
   result.hpCurrent = result.hpMax;
 
   const acRaw = getAnn("AC");
   result.ac = parseInt(acRaw) || 10;
+  // Fallback for AC from text
+  if (result.ac === 10) {
+    const acMatch = textItems.match(/AC\s*(\d+)/i);
+    if (acMatch) result.ac = parseInt(acMatch[1]) || 10;
+  }
 
   const initRaw = getAnn("Init");
   result.initiative = parseInt(initRaw.replace(/[^-0-9]/g, '')) || 0;
@@ -98,6 +119,8 @@ export async function parseDnDBeyondPdf(file: File): Promise<ParsedCharacter> {
   
   const profRaw = getAnn("ProfBonus");
   result.proficiencyBonus = parseInt(profRaw.replace(/[^-0-9]/g, '')) || 2;
+  
+  console.log("Core Stats Extracted:", { AC: result.ac, HP: result.hpMax, Init: result.initiative });
 
   // --- Extract Ability Scores ---
   const extractScore = (key: string, name: string) => {

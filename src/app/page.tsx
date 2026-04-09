@@ -367,7 +367,7 @@ export default function Home() {
                     <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/722.png" alt="Evil DM" className="w-10 h-10" />
                 </div>
                 <div>
-                   <h1 className="text-xl font-black text-white uppercase tracking-tighter">End of Hexanriel</h1>
+                   <h1 className="text-xl font-black text-white uppercase tracking-tighter">EVIL DM&apos;s Tiny Hut</h1>
                    <p className="text-[10px] font-bold text-gold uppercase tracking-[0.3em] opacity-50">Archives & Realms</p>
                 </div>
             </div>

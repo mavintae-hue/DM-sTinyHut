@@ -81,8 +81,11 @@ export default function Home() {
   const [isUploading, setIsUploading] = useState(false);
   const [savedRooms, setSavedRooms] = useState<{ id: string, name: string }[]>([]);
 
+  // Active roll request — passed directly to DiceCanvas as a prop (bypasses broadcast)
+  const [activeRollRequest, setActiveRollRequest] = useState<import("@/hooks/useSupabaseRealtime").RollRequest | null>(null);
+
   // Realtime hook
-  const { logs, sendRollRequest, saveRollResult, channel, activePlayers } = useSupabaseRealtime(
+  const { logs, sendRollRequest, saveRollResult, activePlayers } = useSupabaseRealtime(
     joined ? (roomUuid || "") : "",
     playerName,
     playerAvatar
@@ -271,18 +274,26 @@ export default function Home() {
       rollType = type === 'adv' ? 'damage_crit' : 'damage_normal';
     }
 
-    sendRollRequest({
+    const request: RollRequest = {
       playerName,
       actionName: label,
-      rollType: rollType,
-      formula: formula,
+      rollType,
+      formula,
       modifier: mod,
-      themeColor: themeColor || '#9b111e'
-    });
+      themeColor: themeColor || '#9b111e',
+    };
+
+    // Trigger dice directly via prop (avoids broadcast listener timing issues)
+    setActiveRollRequest({ ...request, _id: Date.now() } as any);
+
+    // Also broadcast so other players' dice react (multiplayer)
+    sendRollRequest(request);
   };
 
   const handleQuickRoll = (request: RollRequest) => {
-    sendRollRequest({ ...request, themeColor });
+    const req = { ...request, themeColor };
+    setActiveRollRequest({ ...req, _id: Date.now() } as any);
+    sendRollRequest(req);
   };
 
   const handleUpdateHp = async (current: number) => {
@@ -568,9 +579,9 @@ export default function Home() {
       )}
 
       <DiceCanvas 
-        channel={channel} 
         playerName={playerName} 
-        themeColor={themeColor} 
+        themeColor={themeColor}
+        rollRequest={activeRollRequest}
         onRollComplete={res => saveRollResult({ ...res, resultDetails: { ...res.resultDetails, player_avatar: playerAvatar } })} 
       />
     </main>

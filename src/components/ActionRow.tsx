@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FlaskConical, Target, MoreVertical, ShieldAlert, Crosshair } from "lucide-react";
+import { FlaskConical, Target, MoreVertical, ShieldAlert, Crosshair, Edit2, Trash2 } from "lucide-react";
 import { RollRequest } from "@/hooks/useSupabaseRealtime";
 
 interface ActionItem {
@@ -17,9 +17,11 @@ interface ActionRowProps {
   action: ActionItem;
   playerName: string;
   onRoll: (request: RollRequest) => void;
+  onEdit: () => void;
+  onDelete: () => void;
 }
 
-export default function ActionRow({ action, playerName, onRoll }: ActionRowProps) {
+export default function ActionRow({ action, playerName, onRoll, onEdit, onDelete }: ActionRowProps) {
   const [showHitMenu, setShowHitMenu] = useState(false);
   const [showDamageMenu, setShowDamageMenu] = useState(false);
 
@@ -169,6 +171,29 @@ export default function ActionRow({ action, playerName, onRoll }: ActionRowProps
 
       <td className="py-3 px-4 text-xs text-gray-400 max-w-xs truncate">
         {action.notes}
+      </td>
+      <td className="py-3 px-4 w-20">
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            onClick={(e) => { e.stopPropagation(); onEdit(); }}
+            className="p-1.5 text-gray-500 hover:text-blue-400 hover:bg-blue-400/10 rounded transition-all"
+            title="Edit Action"
+          >
+            <Edit2 className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              if (confirm(`Are you sure you want to delete "${action.name}"?`)) {
+                onDelete();
+              }
+            }}
+            className="p-1.5 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded transition-all"
+            title="Delete Action"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </td>
     </tr>
   );

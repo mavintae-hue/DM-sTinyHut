@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ActionRow from "./ActionRow";
 import { RollRequest } from "@/hooks/useSupabaseRealtime";
 import { Plus, X } from "lucide-react";
@@ -19,10 +19,20 @@ interface ActionDashboardProps {
   playerName: string;
   onRoll: (request: RollRequest) => void;
   onAddCustomAction: (action: Omit<ActionItem, "id">) => void;
+  onUpdateAction: (action: ActionItem) => void;
+  onDeleteAction: (id: string) => void;
 }
 
-export default function ActionDashboard({ actions, playerName, onRoll, onAddCustomAction }: ActionDashboardProps) {
+export default function ActionDashboard({ 
+  actions, 
+  playerName, 
+  onRoll, 
+  onAddCustomAction,
+  onUpdateAction,
+  onDeleteAction 
+}: ActionDashboardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingAction, setEditingAction] = useState<ActionItem | null>(null);
   const [newAction, setNewAction] = useState({
     name: "",
     range: "5 ft.",
@@ -31,14 +41,43 @@ export default function ActionDashboard({ actions, playerName, onRoll, onAddCust
     notes: "",
   });
 
+  // Effect to populate form when editing
+  useEffect(() => {
+    if (editingAction) {
+      setNewAction({
+        name: editingAction.name,
+        range: editingAction.range,
+        hitBonus: editingAction.hitBonus,
+        damageDice: editingAction.damageDice,
+        notes: editingAction.notes
+      });
+      setIsModalOpen(true);
+    } else {
+      setNewAction({ name: "", range: "5 ft.", hitBonus: 0, damageDice: "1d8", notes: "" });
+    }
+  }, [editingAction]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onAddCustomAction({
+    const actionData = {
       ...newAction,
       hitBonus: parseInt(newAction.hitBonus as any, 10) || 0,
-    });
+    };
+
+    if (editingAction) {
+      onUpdateAction({ ...actionData, id: editingAction.id });
+      setEditingAction(null);
+    } else {
+      onAddCustomAction(actionData);
+    }
+    
     setIsModalOpen(false);
     setNewAction({ name: "", range: "5 ft.", hitBonus: 0, damageDice: "1d8", notes: "" });
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingAction(null);
   };
 
   return (
@@ -81,6 +120,8 @@ export default function ActionDashboard({ actions, playerName, onRoll, onAddCust
                   action={action}
                   playerName={playerName}
                   onRoll={onRoll}
+                  onEdit={() => setEditingAction(action)}
+                  onDelete={() => onDeleteAction(action.id)}
                 />
               ))
             )}
@@ -92,8 +133,10 @@ export default function ActionDashboard({ actions, playerName, onRoll, onAddCust
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <div className="bg-card border border-border rounded-lg shadow-2xl w-full max-w-md overflow-hidden">
             <div className="flex justify-between items-center p-4 border-b border-border bg-dark">
-              <h3 className="font-bold text-gold">Add Custom Action</h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white">
+              <h3 className="font-bold text-gold">
+                {editingAction ? "Edit Custom Action" : "Add Custom Action"}
+              </h3>
+              <button onClick={handleCloseModal} className="text-gray-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -147,8 +190,10 @@ export default function ActionDashboard({ actions, playerName, onRoll, onAddCust
               </div>
               
               <div className="pt-4 flex justify-end gap-2">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded text-sm font-semibold text-gray-400 hover:text-white hover:bg-dark">Cancel</button>
-                <button type="submit" className="px-4 py-2 rounded text-sm font-semibold bg-gold text-darker hover:bg-gold-hover">Add Action</button>
+                <button type="button" onClick={handleCloseModal} className="px-4 py-2 rounded text-sm font-semibold text-gray-400 hover:text-white hover:bg-dark">Cancel</button>
+                <button type="submit" className="px-4 py-2 rounded text-sm font-semibold bg-gold text-darker hover:bg-gold-hover">
+                  {editingAction ? "Save Changes" : "Add Action"}
+                </button>
               </div>
             </form>
           </div>

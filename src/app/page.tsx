@@ -237,7 +237,7 @@ export default function Home() {
     const actionWithId = { ...newAction, id: Math.random().toString() };
     setActions([...actions, actionWithId]);
 
-    await supabase.from("actions").insert({
+    const { data: inserted, error } = await supabase.from("actions").insert({
       room_id: roomUuid,
       owner_name: playerName,
       name: newAction.name,
@@ -245,7 +245,29 @@ export default function Home() {
       hit_bonus: newAction.hitBonus,
       damage_dice: newAction.damageDice,
       notes: newAction.notes
-    });
+    }).select();
+    
+    // Replace temp local ID with real DB ID if needed for immediate edit/delete
+    if (!error && inserted && inserted.length > 0) {
+      setActions(prev => prev.map(a => a.id === actionWithId.id ? { ...a, id: inserted[0].id } : a));
+    }
+  };
+
+  const handleUpdateAction = async (updatedAction: any) => {
+    setActions(actions.map(a => a.id === updatedAction.id ? updatedAction : a));
+
+    await supabase.from("actions").update({
+      name: updatedAction.name,
+      attack_range: updatedAction.range,
+      hit_bonus: updatedAction.hitBonus,
+      damage_dice: updatedAction.damageDice,
+      notes: updatedAction.notes
+    }).eq("id", updatedAction.id);
+  };
+
+  const handleDeleteAction = async (id: string) => {
+    setActions(actions.filter(a => a.id !== id));
+    await supabase.from("actions").delete().eq("id", id);
   };
 
   const handleRoll = (request: RollRequest) => {
@@ -716,6 +738,8 @@ export default function Home() {
             playerName={playerName} 
             onRoll={handleRoll} 
             onAddCustomAction={handleAddCustomAction} 
+            onUpdateAction={handleUpdateAction}
+            onDeleteAction={handleDeleteAction}
           />
         </div>
         <div className="w-full lg:w-[500px] shrink-0">

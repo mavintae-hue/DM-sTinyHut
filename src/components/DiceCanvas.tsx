@@ -32,10 +32,10 @@ export default function DiceCanvas({ themeColor }: DiceCanvasProps) {
 
           // ── Full-screen physics world ─────────────────────────────────
           scale: 24,
-          gravity: 0.8,
-          startingHeight: 25,
-          spinForce: 20,
-          throwForce: 6,
+          gravity: 1.5,       // Settle faster after spreading
+          startingHeight: 8,  // Low drop = more horizontal momentum on bounce
+          spinForce: 20,      // Max spin for epic look
+          throwForce: 40,     // HIGH force so dice spread across full screen
           // ─────────────────────────────────────────────────────────────
         });
 

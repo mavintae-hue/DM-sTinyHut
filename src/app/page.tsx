@@ -560,7 +560,6 @@ export default function Home() {
   return (
     <main className="min-h-screen p-4 md:p-8 relative pb-24 transition-all duration-1000 bg-cover bg-center" style={{ backgroundImage: bgTheme ? `url('${bgTheme}')` : 'none', color: fontTheme }}>
       <div className="absolute inset-0 bg-black/25 pointer-events-none z-0 backdrop-brightness-[1.1]"></div>
-      <DiceCanvas channel={channel} playerName={playerName} themeColor={themeColor} onRollComplete={res => saveRollResult({ ...res, resultDetails: { ...res.resultDetails, player_avatar: playerAvatar } })} />
 
       <header className="mb-8 flex justify-between items-center relative z-10">
         <div className="flex items-center gap-4">
@@ -650,6 +649,14 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* Render DiceCanvas at the very end with highest Z-index priority */}
+      <DiceCanvas 
+        channel={channel} 
+        playerName={playerName} 
+        themeColor={themeColor} 
+        onRollComplete={res => saveRollResult({ ...res, resultDetails: { ...res.resultDetails, player_avatar: playerAvatar } })} 
+      />
     </main>
   );
 }

@@ -166,7 +166,7 @@ export default function DiceCanvas({ channel, playerName, themeColor, onRollComp
     <div
       id="dice-canvas"
       ref={containerRef}
-      className="fixed top-0 left-0 w-screen h-screen z-50 pointer-events-none"
+      className="fixed top-0 left-0 w-screen h-screen z-[9999] pointer-events-none"
       style={{ background: "transparent" }}
     />
   );

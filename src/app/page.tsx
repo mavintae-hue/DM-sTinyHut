@@ -588,7 +588,7 @@ export default function Home() {
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 p-4 flex gap-4 pointer-events-none z-[40]">
-        <div className="flex-1 pointer-events-auto">
+        <div className="w-fit pointer-events-auto">
           <HistoryLog logs={logs} />
         </div>
         <div className="pointer-events-auto">

@@ -224,6 +224,10 @@ export default function Home() {
     });
   };
 
+  const handleQuickRoll = (request: RollRequest) => {
+    sendRollRequest({ ...request, themeColor });
+  };
+
   const handleUpdateHp = async (current: number) => {
     if (!roomUuid) return;
     setPlayerData({ ...playerData, hp_current: current });
@@ -475,7 +479,7 @@ export default function Home() {
           <HistoryLog logs={logs} />
         </div>
         <div className="pointer-events-auto">
-          <QuickRoller themeColor={themeColor} onRoll={handleRoll} />
+          <QuickRoller playerName={playerName} onRoll={handleQuickRoll} />
         </div>
       </div>
 

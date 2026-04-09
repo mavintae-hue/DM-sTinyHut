@@ -51,11 +51,11 @@ export default function StatHexagon({ label, score, modifier, onRoll, editable, 
         />
       </svg>
 
-      <div className="absolute inset-0 flex flex-col items-center justify-center pb-6">
+      <div className="absolute inset-0 flex flex-col items-center justify-center pb-6 group-hover:scale-110 transition-transform duration-300">
         <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-1 group-hover:text-cyan-400/80 transition-colors">
           {label}
         </span>
-        <span className="text-3xl font-black text-white group-hover:text-cyan-400 transition-colors">
+        <span className="text-3xl font-black text-white group-hover:text-cyan-400 transition-colors drop-shadow-lg">
           {modText}
         </span>
       </div>

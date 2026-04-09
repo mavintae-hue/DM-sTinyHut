@@ -32,7 +32,7 @@ export default function SkillRow({ name, modifier, isProficient, type, onRoll, e
 
   return (
     <div 
-      className={`group flex items-center justify-between py-1.5 px-2 hover:bg-white/5 rounded-lg border border-transparent hover:border-white/5 transition-all ${editable ? '' : 'cursor-pointer active:bg-white/10'}`}
+      className={`group flex items-center justify-between py-1.5 px-2 hover:bg-white/5 rounded-lg border border-transparent hover:border-cyan-400/20 transition-all ${editable ? '' : 'cursor-pointer active:scale-[0.98]'}`}
       onClick={() => (!editable && onRoll(name, modifier, 'normal'))}
       onContextMenu={handleContextMenu}
     >

@@ -176,11 +176,17 @@ export default function BeyondDashboard({
               <StatHexagon label="CHA" score={player.ability_scores?.cha || 10} modifier={getMod(player.ability_scores?.cha || 10)} onRoll={onRoll} editable={isEditMode} onUpdate={(score) => onUpdatePlayer({ ability_scores: { ...player.ability_scores, cha: score } })} />
             </div>
           </div>
-
-          <div className="bg-[#151515]/60 border border-white/5 rounded-[2rem] p-6 shadow-xl">
+          <div className="bg-[#151515]/60 block border border-white/5 rounded-[2rem] p-6 shadow-xl">
             <h3 className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] mb-4 ml-2">Saving Throws</h3>
             <div className="space-y-1">
-              {(player.saves || []).map((save: any, i: number) => (
+              {(player.saves && player.saves.length > 0 ? player.saves : [
+                { name: "Strength", modifier: getMod(player.ability_scores?.str || 10), isProficient: false },
+                { name: "Dexterity", modifier: getMod(player.ability_scores?.dex || 10), isProficient: false },
+                { name: "Constitution", modifier: getMod(player.ability_scores?.con || 10), isProficient: false },
+                { name: "Intelligence", modifier: getMod(player.ability_scores?.int || 10), isProficient: false },
+                { name: "Wisdom", modifier: getMod(player.ability_scores?.wis || 10), isProficient: false },
+                { name: "Charisma", modifier: getMod(player.ability_scores?.cha || 10), isProficient: false }
+              ]).map((save: any, i: number) => (
                 <SkillRow 
                   key={i} 
                   name={save.name} 
@@ -190,9 +196,16 @@ export default function BeyondDashboard({
                   onRoll={onRoll} 
                   editable={isEditMode}
                   onUpdate={(updates) => {
-                    const newSaves = [...player.saves];
-                    newSaves[i] = { ...newSaves[i], ...updates };
-                    onUpdatePlayer({ saves: newSaves });
+                    const currentSaves = player.saves && player.saves.length > 0 ? [...player.saves] : [
+                      { name: "Strength", modifier: getMod(player.ability_scores?.str || 10), isProficient: false },
+                      { name: "Dexterity", modifier: getMod(player.ability_scores?.dex || 10), isProficient: false },
+                      { name: "Constitution", modifier: getMod(player.ability_scores?.con || 10), isProficient: false },
+                      { name: "Intelligence", modifier: getMod(player.ability_scores?.int || 10), isProficient: false },
+                      { name: "Wisdom", modifier: getMod(player.ability_scores?.wis || 10), isProficient: false },
+                      { name: "Charisma", modifier: getMod(player.ability_scores?.cha || 10), isProficient: false }
+                    ];
+                    currentSaves[i] = { ...currentSaves[i], ...updates };
+                    onUpdatePlayer({ saves: currentSaves });
                   }}
                 />
               ))}

@@ -469,10 +469,10 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen flex relative overflow-hidden bg-fixed bg-cover bg-center transition-all duration-1000" style={{ backgroundImage: bgTheme ? `url('${bgTheme}')` : 'none', color: fontTheme }}>
-      <div className="absolute inset-0 bg-black/30 pointer-events-none z-0 backdrop-brightness-[1.1]"></div>
+    <main className="h-screen flex relative overflow-hidden bg-fixed bg-cover bg-center transition-all duration-1000" style={{ backgroundImage: bgTheme ? `url('${bgTheme}')` : 'none', color: fontTheme }}>
+      <div className="absolute inset-0 bg-black/40 pointer-events-none z-0 backdrop-brightness-[1.1]"></div>
 
-      <div className="flex-1 flex flex-col min-h-screen relative transition-all duration-500 ease-in-out overflow-hidden">
+      <div className="flex-1 flex flex-col h-full relative transition-all duration-500 ease-in-out overflow-hidden">
         <header className="p-4 md:p-8 flex justify-between items-center relative z-10 w-full max-w-[1700px] mx-auto shrink-0">
           <div className="flex items-center gap-4">
             <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/722.png" alt="Tinyhut" className="w-12 h-12" />

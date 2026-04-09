@@ -78,7 +78,7 @@ export default function BeyondDashboard({
                 <Camera className="w-6 h-6 text-white" />
               </div>
             </div>
-            <div className="absolute -bottom-1 -right-1 bg-darker border border-white/10 px-2 py-0.5 rounded-full text-[10px] font-bold text-gray-400">
+            <div className="absolute -bottom-1 -right-1 bg-darker border border-white/10 px-2 py-0.5 rounded-full text-[8px] font-bold text-gray-400">
               LVL {player.class_level?.match(/\d+/)?.[0] || '??'}
             </div>
           </div>
@@ -138,7 +138,7 @@ export default function BeyondDashboard({
             onUpdate={(val) => onUpdatePlayer({ speed: val as string })}
           />
           <div className="relative group flex flex-col items-center justify-center p-4 bg-[#1a1a1a] border border-red-500/30 rounded-2xl shadow-xl min-w-[140px] h-24">
-            <span className="text-[10px] font-black opacity-50 uppercase tracking-widest mb-1 text-red-400">Hit Points</span>
+            <span className="text-[8px] font-black opacity-50 uppercase tracking-widest mb-1 text-red-400">Hit Points</span>
             <div className="flex items-baseline gap-1">
               <input
                 type="number"

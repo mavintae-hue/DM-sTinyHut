@@ -35,7 +35,7 @@ export default function CombatBox({ label, value, subValue, onRoll, accent = 'cy
       onClick={() => (!editable && onRoll?.('normal'))}
       onContextMenu={handleContextMenu}
     >
-      <span className="text-[10px] font-black opacity-50 uppercase tracking-widest mb-1">{label}</span>
+      <span className="text-[8px] font-black opacity-50 uppercase tracking-widest mb-1">{label}</span>
       {editable ? (
         <input 
           type="text"

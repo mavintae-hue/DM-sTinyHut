@@ -28,30 +28,29 @@ export default function DiceCanvas({ channel, playerName, themeColor, onRollComp
     // Determine if we're in a browser environment
     if (typeof window === "undefined") return;
 
-    // Prevent multiple initializations even if React re-renders this effect once
-    if (diceBoxRef.current) return;
-
     // Use a small delay to ensure the container is truly ready in the DOM
-    const initDelay = setTimeout(() => {
-      if (!containerRef.current) return;
+    let diceBox: any = null;
+    const initDelay = setTimeout(async () => {
+      if (!containerRef.current || diceBoxRef.current) return;
 
-      const diceBox = new DiceBox({
-        container: "#dice-container", 
-        assetPath: "https://unpkg.com/@3d-dice/dice-box@1.1.4/dist/assets/",
-        theme: "default",
-        themeColor: themeColor,
-        scale: 7, 
-        spinForce: 10,
-        throwForce: 30, 
-        gravity: 2,
-        startingHeight: 12
-      });
+      try {
+        diceBox = new DiceBox({
+          container: "#dice-container", 
+          assetPath: "https://unpkg.com/@3d-dice/dice-box@1.1.4/dist/assets/",
+          theme: "default",
+          themeColor: themeColor,
+          scale: 7, 
+          spinForce: 10,
+          throwForce: 30, 
+          gravity: 2,
+          startingHeight: 12
+        });
 
-      diceBoxRef.current = diceBox;
-
-      console.log("DiceBox: Starting initialization...");
-      diceBox.init().then(() => {
+        console.log("DiceBox: Starting initialization...");
+        await diceBox.init();
         console.log("DiceBox: Initialization successful!");
+        
+        diceBoxRef.current = diceBox;
         setIsReady(true);
         
         diceBox.onRollComplete = (results: any) => {
@@ -100,17 +99,26 @@ export default function DiceCanvas({ channel, playerName, themeColor, onRollComp
             });
           }
         };
-      }).catch((e: Error) => {
+      } catch (e) {
         console.error("DiceBox: Initialization failed!", e);
-      });
-    }, 200);
+      }
+    }, 500); // Increased delay for stability
 
-    return () => clearTimeout(initDelay);
+    return () => {
+      clearTimeout(initDelay);
+      if (diceBoxRef.current) {
+        // Clear references
+        diceBoxRef.current = null;
+        setIsReady(false);
+      }
+    };
   }, []); 
 
   useEffect(() => {
     if (isReady && diceBoxRef.current) {
-        diceBoxRef.current.updateConfig({ themeColor });
+        try {
+          diceBoxRef.current.updateConfig({ themeColor });
+        } catch (e) {}
     }
   }, [themeColor, isReady]);
 
@@ -120,12 +128,15 @@ export default function DiceCanvas({ channel, playerName, themeColor, onRollComp
     const listener = (payload: any) => {
       const request = payload.payload as RollRequest;
       const diceBox = diceBoxRef.current;
-      if (!diceBox) return;
+      if (!diceBox) {
+        console.warn("DiceBox: Request received but box not ready.");
+        return;
+      }
 
       rollQueueRef.current.push(request);
 
       if (request.themeColor) {
-        diceBox.updateConfig({ themeColor: request.themeColor });
+        try { diceBox.updateConfig({ themeColor: request.themeColor }); } catch (e) {}
       }
 
       let diceNotation = request.formula;
@@ -140,20 +151,18 @@ export default function DiceCanvas({ channel, playerName, themeColor, onRollComp
       console.log("DiceBox: Rolling", diceArray);
       try {
         diceBox.show();
-        if (typeof diceBox.add === 'function') {
-          diceBox.add(diceArray);
-        } else {
-          diceBox.roll(diceArray);
-        }
+        // Use roll() as the primary method for better compatibility
+        diceBox.roll(diceArray);
       } catch (err) {
         console.error("DiceBox: Roll failed!", err);
-        try { diceBox.roll(diceArray); } catch (e) {}
       }
     };
 
-    channel.on("broadcast", { event: "roll_request" }, listener);
+    const sub = channel.on("broadcast", { event: "roll_request" }, listener);
 
-    return () => {};
+    return () => {
+      // Supabase V2 cleans up broadcast listeners when channel is removed/unsubscribed
+    };
   }, [channel, isReady, playerName]);
 
   return (

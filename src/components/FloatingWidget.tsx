@@ -127,9 +127,22 @@ export default function FloatingWidget({
       {!isMinimized && (
         <div
           onMouseDown={handleResizeStart}
-          className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize flex items-center justify-center group"
+          className="absolute bottom-0 right-0 w-6 h-6 cursor-nwse-resize flex items-end justify-end p-1.5 opacity-40 hover:opacity-100 transition-opacity z-[100]"
         >
-          <div className="w-1 h-1 bg-white/20 rounded-full group-hover:bg-gold transition-colors" />
+          <div className="flex flex-col gap-0.5 items-end">
+            <div className="flex gap-0.5">
+              <div className="w-0.5 h-0.5 bg-white rounded-full" />
+            </div>
+            <div className="flex gap-0.5">
+              <div className="w-0.5 h-0.5 bg-white rounded-full" />
+              <div className="w-0.5 h-0.5 bg-white rounded-full" />
+            </div>
+            <div className="flex gap-0.5">
+              <div className="w-0.5 h-0.5 bg-white rounded-full" />
+              <div className="w-0.5 h-0.5 bg-white rounded-full" />
+              <div className="w-0.5 h-0.5 bg-white rounded-full" />
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -32,29 +32,27 @@ export default function DiceCanvas({ channel, playerName, themeColor, onRollComp
         assetPath: "/assets/dice-box/",
         theme: "default",
         themeColor: themeColor,
-        scale: 8, // Reduced scale further
+        scale: 7.2, // 10% smaller than 8
         spinForce: 15,
-        throwForce: 35, // Drastically increased throw force so it bounces off the edges
+        throwForce: 35, 
         gravity: 2.5,
         startingHeight: 15
       });
 
     diceBoxRef.current = diceBox;
+    const rollQueue: RollRequest[] = [];
 
     diceBox.init().then(() => {
       setIsReady(true);
       
       // Setup callback when dice finish rolling
       diceBox.onRollComplete = (results: any) => {
-        const req = currentRollRequestRef.current;
+        const req = rollQueue.shift(); // Take the oldest request from queue
         if (!req) return;
 
         // If it's the player who requested the roll, save it to DB
         if (req.playerName === playerName) {
-           // Parse formula to find base dice, e.g., "1d20+5", "2d6+3"
            let modifier = req.modifier;
-           
-           // The results from dice-box is usually an array of dice groups.
            let totalFromDice = 0;
            let rolls: number[] = [];
 
@@ -101,16 +99,12 @@ export default function DiceCanvas({ channel, playerName, themeColor, onRollComp
              }
            });
         }
-        
-        // Clear current request after settling
-        currentRollRequestRef.current = null;
-        
-        // Auto-clear dice after 4 seconds
-        setTimeout(() => {
-           if (diceBoxRef.current) diceBoxRef.current.clear();
-        }, 4000);
       };
-    }).catch((e: Error) => console.error("DiceBox failed to initialize. Assets might be missing.", e));
+
+      // Expose rollQueue to the other effect via ref-like behavior on diceBox instance
+      (diceBox as any)._rollQueue = rollQueue;
+    })
+.catch((e: Error) => console.error("DiceBox failed to initialize. Assets might be missing.", e));
     
     }, 100);
 
@@ -131,13 +125,18 @@ export default function DiceCanvas({ channel, playerName, themeColor, onRollComp
 
     const listener = channel.on("broadcast", { event: "roll_request" }, (payload) => {
       const request = payload.payload as RollRequest;
-      currentRollRequestRef.current = request;
+      const diceBox = diceBoxRef.current;
+      if (!diceBox) return;
+
+      // Access the queue we attached during initialization
+      const queue = (diceBox as any)._rollQueue || [];
+      queue.push(request);
 
       // Ensure we have diceBox
-      if (diceBoxRef.current) {
+      if (diceBox) {
          // Sync dice color for this specific roll
          if (request.themeColor) {
-            diceBoxRef.current.updateConfig({ themeColor: request.themeColor });
+            diceBox.updateConfig({ themeColor: request.themeColor });
          }
 
          let diceNotation = request.formula;

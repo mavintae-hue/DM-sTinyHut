@@ -29,7 +29,7 @@ export default function DiceCanvas({ channel, playerName, themeColor, onRollComp
       if (diceBoxRef.current || !document.querySelector("#dice-canvas")) return;
 
       const diceBox = new DiceBox({
-        container: "#dice-canvas",
+        container: containerRef.current!, // Use the ref directly
         assetPath: "/assets/dice-box/",
         theme: "default",
         themeColor: themeColor,
@@ -144,7 +144,8 @@ export default function DiceCanvas({ channel, playerName, themeColor, onRollComp
          
          // In actual physics, we only care about the dice format string "1d20", "2d6", etc.
          // Pass an array to diceBox to natively roll multiple groups (e.g. 1d6 + 1d4 -> ["1d6", "1d4"])
-         const diceArray = diceNotation.split('+').map(s => s.trim()).filter(Boolean);
+         // CRITICAL: Filter out plain numeric modifiers as they aren't valid notation for dice-box.roll()
+         const diceArray = diceNotation.split('+').map(s => s.trim()).filter(s => s.toLowerCase().includes('d'));
          
          try {
            diceBox.show();

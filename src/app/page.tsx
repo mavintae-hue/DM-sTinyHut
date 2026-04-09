@@ -78,7 +78,7 @@ export default function Home() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [showManager, setShowManager] = useState(false);
-  const [savedRooms, setSavedRooms] = useState<string[]>([]);
+  const [savedRooms, setSavedRooms] = useState<{id: string, name: string}[]>([]);
 
   // Realtime hook
   const { logs, sendRollRequest, saveRollResult, channel, activePlayers } = useSupabaseRealtime(
@@ -88,8 +88,8 @@ export default function Home() {
   );
 
   const fetchMetadata = useCallback(async () => {
-    const { data: roomData } = await supabase.from("rooms").select("name");
-    if (roomData) setSavedRooms(Array.from(new Set(roomData.map((r: any) => r.name))));
+    const { data: roomData } = await supabase.from("rooms").select("id, name");
+    if (roomData) setSavedRooms(roomData);
   }, []);
 
   useEffect(() => { fetchMetadata(); }, [fetchMetadata]);
@@ -377,17 +377,16 @@ export default function Home() {
 
                 {/* Stored Realms */}
                 {savedRooms.map(r => (
-                    <div key={r} className="group relative bg-white/5 hover:bg-white/10 border border-white/10 p-8 rounded-[2.5rem] transition-all cursor-pointer overflow-hidden" 
+                    <div key={r.id} className="group relative bg-white/5 hover:bg-white/10 border border-white/10 p-8 rounded-[2.5rem] transition-all cursor-pointer overflow-hidden" 
                         onClick={() => { 
-                            setRoomId(r); 
-                            // Direct call since the form button might be gone or hidden
-                            setRoomUuid(r);
+                            setRoomId(r.name); 
+                            setRoomUuid(r.id);
                         }}>
                         <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button 
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    if(confirm(`Erase realm ${r}?`)) { supabase.from("rooms").delete().eq("name", r).then(() => fetchMetadata()); }
+                                    if(confirm(`Erase realm ${r.name}?`)) { supabase.from("rooms").delete().eq("id", r.id).then(() => fetchMetadata()); }
                                 }}
                                 className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-xl transition-all"
                             >
@@ -397,7 +396,7 @@ export default function Home() {
                         <div className="w-16 h-16 bg-white/5 rounded-2xl border border-white/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                             <Globe className="w-8 h-8 text-gold/40" />
                         </div>
-                        <h4 className="text-2xl font-black text-white uppercase tracking-tighter mb-1">{r}</h4>
+                        <h4 className="text-2xl font-black text-white uppercase tracking-tighter mb-1">{r.name}</h4>
                         <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Ancient Kingdom</p>
                         
                         <div className="mt-8 flex items-center gap-2 text-gold font-black text-[10px] uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">

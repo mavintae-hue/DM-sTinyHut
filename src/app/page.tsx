@@ -277,7 +277,7 @@ export default function Home() {
   };
 
   const handleRoll = (label: string, mod: number, type: 'normal' | 'adv' | 'dis', isDamage = false, formulaUrl?: string) => {
-    let formula = formulaUrl || `d20${mod >= 0 ? '+' : ''}${mod}`;
+    let formula = formulaUrl || `1d20${mod >= 0 ? '+' : ''}${mod}`;
     let rollType: RollRequest['rollType'] = 'custom';
 
     if (!isDamage) {

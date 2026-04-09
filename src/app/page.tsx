@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { supabase } from "@/lib/supabase";
 import HistoryLog from "@/components/HistoryLog";
-import DiceCanvas from "@/components/DiceCanvas";
 import QuickRoller from "@/components/QuickRoller";
 import BeyondDashboard from "@/components/character-sheet/BeyondDashboard";
 import FloatingWidget from "@/components/FloatingWidget";
+
+// Load DiceCanvas dynamically to prevent SSR issues with the 3D physics engine
+const DiceCanvas = dynamic(() => import("@/components/DiceCanvas"), { ssr: false });
 import { useSupabaseRealtime, RollRequest, RollResult } from "@/hooks/useSupabaseRealtime";
 import { Dices, LogIn, Users, Settings2, X, Trash2, Palette, UserPlus, UploadCloud, ChevronLeft, Paintbrush, Check, Globe, Sparkles, Plus } from "lucide-react";
 

@@ -47,25 +47,6 @@ export default function FloatingWidget({
     localStorage.setItem(`widget_${storageKey}`, JSON.stringify({ pos: position, size, minimized: isMinimized }));
   }, [position, size, isMinimized, storageKey]);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    isDragging.current = true;
-    dragOffset.current = {
-      x: e.clientX - position.x,
-      y: e.clientY - position.y
-    };
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
-  };
-
-  const handleResizeStart = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    isResizing.current = true;
-    startPos.current = { x: e.clientX, y: e.clientY };
-    startSize.current = { ...size };
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
-  };
-
   const handleMouseMove = (e: MouseEvent) => {
     if (isDragging.current) {
       setPosition({
@@ -85,8 +66,43 @@ export default function FloatingWidget({
   const handleMouseUp = () => {
     isDragging.current = false;
     isResizing.current = false;
-    document.removeEventListener("mousemove", handleMouseMove);
-    document.removeEventListener("mouseup", handleMouseUp);
+  };
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => handleMouseMove(e);
+    const onUp = () => handleMouseUp();
+
+    // We only attach these if we are actually dragging or resizing
+    // But since we use refs, we can attach them once or manage them here.
+    // Optimized: only attach when active.
+    const onMouseDownGlobal = () => {
+      if (isDragging.current || isResizing.current) {
+        window.addEventListener("mousemove", onMove);
+        window.addEventListener("mouseup", onUp);
+      }
+    };
+
+    window.addEventListener("mousedown", onMouseDownGlobal);
+    return () => {
+      window.removeEventListener("mousedown", onMouseDownGlobal);
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, []);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    isDragging.current = true;
+    dragOffset.current = {
+      x: e.clientX - position.x,
+      y: e.clientY - position.y
+    };
+  };
+
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    isResizing.current = true;
+    startPos.current = { x: e.clientX, y: e.clientY };
+    startSize.current = { ...size };
   };
 
   return (

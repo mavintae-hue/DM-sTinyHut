@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import ActionRow from "./ActionRow";
 import { RollRequest } from "@/hooks/useSupabaseRealtime";
 import { Plus, X, Import } from "lucide-react";
-import PdfImporter from "./PdfImporter";
+
+const PdfImporter = dynamic(() => import("./PdfImporter"), { ssr: false });
 import { ParsedAction } from "@/lib/pdfParser";
 
 interface ActionItem {

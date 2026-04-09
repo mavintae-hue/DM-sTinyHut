@@ -3,7 +3,9 @@ import * as pdfjsLib from 'pdfjs-dist';
 // Set up worker
 // In a Next.js environment, we need to handle the worker properly.
 // Using a CDN link for the worker as it's the most reliable way in some environments.
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+if (typeof window !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+}
 
 export interface ParsedAction {
   name: string;

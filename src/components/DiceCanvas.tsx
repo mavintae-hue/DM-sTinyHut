@@ -29,11 +29,11 @@ export default function DiceCanvas({ themeColor }: DiceCanvasProps) {
           themeColor,
 
           // ── Size & Physics ────────────────────────────────────────────
-          scale: 12,           // BIG dice (was 7)
-          gravity: 1,          // Lower gravity = longer air time
-          startingHeight: 20,  // Drop from high
-          spinForce: 15,       // Fast spin for cool effect
-          throwForce: 8,       // Medium throw so they spread across screen
+          scale: 24,           // 2x bigger (was 12)
+          gravity: 0.8,        // Even lower gravity = longer air time, more bounce
+          startingHeight: 25,  // Drop from higher
+          spinForce: 20,       // Max spin
+          throwForce: 6,       // Gentle throw so dice spread across full screen
           // ─────────────────────────────────────────────────────────────
 
           offscreen: true,     // Render off-screen for smoother performance

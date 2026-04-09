@@ -3,7 +3,9 @@
 import { useState, useEffect } from "react";
 import ActionRow from "./ActionRow";
 import { RollRequest } from "@/hooks/useSupabaseRealtime";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Import } from "lucide-react";
+import PdfImporter from "./PdfImporter";
+import { ParsedAction } from "@/lib/pdfParser";
 
 interface ActionItem {
   id: string;
@@ -21,6 +23,7 @@ interface ActionDashboardProps {
   onAddCustomAction: (action: Omit<ActionItem, "id">) => void;
   onUpdateAction: (action: ActionItem) => void;
   onDeleteAction: (id: string) => void;
+  onImportActions: (actions: Omit<ActionItem, "id">[]) => void;
 }
 
 export default function ActionDashboard({ 
@@ -29,9 +32,11 @@ export default function ActionDashboard({
   onRoll, 
   onAddCustomAction,
   onUpdateAction,
-  onDeleteAction 
+  onDeleteAction,
+  onImportActions
 }: ActionDashboardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
   const [editingAction, setEditingAction] = useState<ActionItem | null>(null);
   const [newAction, setNewAction] = useState({
     name: "",
@@ -86,13 +91,21 @@ export default function ActionDashboard({
         <h2 className="text-xl font-bold flex items-center gap-2" style={{ color: 'var(--theme-font, #ECC94B)' }}>
           ACTIONS
         </h2>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="text-xs font-semibold hover:opacity-80 transition-opacity flex items-center gap-1"
-          style={{ color: 'var(--theme-font, #ECC94B)' }}
-        >
-          <Plus className="w-4 h-4" /> MANAGE CUSTOM
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsPdfModalOpen(true)}
+            className="text-xs font-semibold text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1 bg-blue-400/10 px-3 py-1.5 rounded-lg border border-blue-400/20"
+          >
+            <Import className="w-4 h-4" /> IMPORT PDF
+          </button>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="text-xs font-semibold hover:opacity-80 transition-opacity flex items-center gap-1"
+            style={{ color: 'var(--theme-font, #ECC94B)' }}
+          >
+            <Plus className="w-4 h-4" /> MANAGE CUSTOM
+          </button>
+        </div>
       </div>
 
       <div className="overflow-x-auto">
@@ -198,6 +211,16 @@ export default function ActionDashboard({
             </form>
           </div>
         </div>
+      )}
+
+      {isPdfModalOpen && (
+        <PdfImporter 
+          onClose={() => setIsPdfModalOpen(false)} 
+          onImport={(importedActions) => {
+            onImportActions(importedActions);
+            setIsPdfModalOpen(false);
+          }}
+        />
       )}
     </div>
   );

@@ -253,6 +253,29 @@ export default function Home() {
     }
   };
 
+  const handleImportActions = async (newActions: any[]) => {
+    // Generate temp IDs for immediate UI update
+    const actionsWithTempIds = newActions.map(a => ({ ...a, id: Math.random().toString() }));
+    setActions([...actions, ...actionsWithTempIds]);
+
+    const itemsToInsert = newActions.map(a => ({
+      room_id: roomUuid,
+      owner_name: playerName,
+      name: a.name,
+      attack_range: a.range,
+      hit_bonus: a.hitBonus,
+      damage_dice: a.damageDice,
+      notes: a.notes
+    }));
+
+    const { data: inserted, error } = await supabase.from("actions").insert(itemsToInsert).select();
+    
+    if (!error && inserted) {
+      // Fetch all actions again to get real IDs and avoid local state issues
+      fetchActions(roomUuid, playerName);
+    }
+  };
+
   const handleUpdateAction = async (updatedAction: any) => {
     setActions(actions.map(a => a.id === updatedAction.id ? updatedAction : a));
 
@@ -740,6 +763,7 @@ export default function Home() {
             onAddCustomAction={handleAddCustomAction} 
             onUpdateAction={handleUpdateAction}
             onDeleteAction={handleDeleteAction}
+            onImportActions={handleImportActions}
           />
         </div>
         <div className="w-full lg:w-[500px] shrink-0">

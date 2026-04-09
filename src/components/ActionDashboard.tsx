@@ -218,8 +218,8 @@ export default function ActionDashboard({
       {isPdfModalOpen && (
         <PdfImporter 
           onClose={() => setIsPdfModalOpen(false)} 
-          onImport={(importedActions) => {
-            onImportActions(importedActions);
+          onImport={(character) => {
+            onImportActions(character.actions);
             setIsPdfModalOpen(false);
           }}
         />

@@ -6,7 +6,7 @@ import CombatBox from "./CombatBox";
 import SkillRow from "./SkillRow";
 import RollContextMenu from "./RollContextMenu";
 import Portal from "../Portal";
-import { Plus, Import, Search, Shield, Zap, Footprints, Heart, Wand2, Sword, Info, Edit3, Camera, Link, Image as ImageIcon, X, UploadCloud } from "lucide-react";
+import { Plus, Import, Search, Shield, Zap, Footprints, Heart, Wand2, Sword, Info, Edit3, Camera, Link, Image as ImageIcon, X, UploadCloud, Check } from "lucide-react";
 import ActionDashboard from "../ActionDashboard";
 
 interface BeyondDashboardProps {

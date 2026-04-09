@@ -8,7 +8,6 @@ interface DiceCanvasProps {
   themeColor: string;
 }
 
-// Prevent double-init across React StrictMode remounts
 let _initialized = false;
 
 export default function DiceCanvas({ themeColor }: DiceCanvasProps) {
@@ -22,26 +21,27 @@ export default function DiceCanvas({ themeColor }: DiceCanvasProps) {
     const timer = setTimeout(async () => {
       if (!containerRef.current) return;
       try {
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+
         const box = new DiceBox({
           container: "#dice-container",
-          assetPath: "/dice-assets/",     // Local assets — no CORS
+          assetPath: "/dice-assets/",
           theme: "default",
           themeColor,
 
-          // ── Size & Physics ────────────────────────────────────────────
-          scale: 24,           // 2x bigger (was 12)
-          gravity: 0.8,        // Even lower gravity = longer air time, more bounce
-          startingHeight: 25,  // Drop from higher
-          spinForce: 20,       // Max spin
-          throwForce: 6,       // Gentle throw so dice spread across full screen
+          // ── Full-screen physics world ─────────────────────────────────
+          scale: 24,
+          gravity: 0.8,
+          startingHeight: 25,
+          spinForce: 20,
+          throwForce: 6,
           // ─────────────────────────────────────────────────────────────
-
-          offscreen: true,     // Render off-screen for smoother performance
         });
 
         await box.init();
         registerDiceBox(box);
-        console.log("[DiceCanvas] ✓ Ready — scale 12, full-screen physics");
+        console.log(`[DiceCanvas] ✓ Ready — ${w}x${h}px world`);
       } catch (e) {
         console.error("[DiceCanvas] Init failed:", e);
         _initialized = false;
@@ -59,13 +59,15 @@ export default function DiceCanvas({ themeColor }: DiceCanvasProps) {
     <div
       id="dice-container"
       ref={containerRef}
-      className="fixed inset-0 z-[9999] pointer-events-none"
       style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
         width: "100vw",
         height: "100vh",
+        zIndex: 9999,
+        pointerEvents: "none",
         background: "transparent",
-        // Ensure no clipping — dice should be visible over EVERYTHING
-        overflow: "visible",
       }}
     />
   );

@@ -24,7 +24,7 @@ export default function DiceCanvas({ themeColor }: DiceCanvasProps) {
       try {
         const box = new DiceBox({
           container: "#dice-container",
-          assetPath: "https://unpkg.com/@3d-dice/dice-box@1.1.4/dist/assets/",
+          assetPath: "/dice-assets/",   // Local assets — no CORS issues
           theme: "default",
           themeColor,
           scale: 7,

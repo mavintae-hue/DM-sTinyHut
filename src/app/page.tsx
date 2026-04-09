@@ -94,6 +94,17 @@ export default function Home() {
 
   useEffect(() => { fetchMetadata(); }, [fetchMetadata]);
 
+  // Auto-fetch players when room changes
+  useEffect(() => {
+    if (roomUuid) {
+      const fetchPlayers = async () => {
+        const { data } = await supabase.from("players").select("*").eq("room_id", roomUuid);
+        if (data) setRoomPlayers(data);
+      };
+      fetchPlayers();
+    }
+  }, [roomUuid]);
+
   const fetchActions = useCallback(async (activeUuid: string, targetPlayer: string) => {
     const { data } = await supabase
       .from("actions")
@@ -352,6 +363,9 @@ export default function Home() {
       if (created) activeUuid = created.id;
     }
     setRoomUuid(activeUuid);
+    setJoined(false);
+    setPlayerData(null);
+    setPlayerName("");
     const { data: players } = await supabase.from("players").select("*").eq("room_id", activeUuid);
     if (players) setRoomPlayers(players);
   };
@@ -381,6 +395,8 @@ export default function Home() {
                         onClick={() => { 
                             setRoomId(r.name); 
                             setRoomUuid(r.id);
+                            setJoined(false); // Reset to choosing player
+                            setPlayerData(null);
                         }}>
                         <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button 

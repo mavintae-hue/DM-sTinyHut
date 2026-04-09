@@ -111,21 +111,22 @@ export default function ActionDashboard({
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
+      <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+        <table className="w-full text-left border-collapse min-w-[800px] table-fixed">
           <thead>
-            <tr className="bg-dark text-xs text-gray-400 font-bold uppercase border-b border-border">
-              <th className="py-2 px-4 w-1/4">Attack</th>
-              <th className="py-2 px-4 w-1/6">Range</th>
-              <th className="py-2 px-4 w-1/6">Hit / DC</th>
-              <th className="py-2 px-4 w-1/6">Damage</th>
-              <th className="py-2 px-4">Notes</th>
+            <tr className="bg-dark text-[10px] text-gray-500 font-black uppercase border-b border-border tracking-widest">
+              <th className="py-4 px-4 w-[25%] uppercase">Attack Essence</th>
+              <th className="py-4 px-4 w-[15%] uppercase">Reach</th>
+              <th className="py-4 px-4 w-[15%] uppercase">Hit/DC</th>
+              <th className="py-4 px-4 w-[20%] uppercase">Damage</th>
+              <th className="py-4 px-4 w-[15%] uppercase">Notes</th>
+              <th className="py-4 px-4 w-[10%] uppercase">Fate</th>
             </tr>
           </thead>
           <tbody>
             {actions.length === 0 ? (
               <tr>
-                <td colSpan={5} className="py-8 text-center text-gray-500 italic">
+                <td colSpan={6} className="py-12 text-center text-gray-500 italic">
                   No actions available. Click "Manage Custom" to add one.
                 </td>
               </tr>

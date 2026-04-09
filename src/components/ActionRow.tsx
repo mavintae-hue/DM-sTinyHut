@@ -93,57 +93,57 @@ export default function ActionRow({ action, playerName, onRoll, onEdit, onDelete
   };
 
   return (
-    <tr className="border-b border-border/50 hover:bg-dark/50 transition-colors group relative">
-      <td className="py-3 px-4 w-1/4">
+    <tr className="border-b border-border/10 hover:bg-white/5 transition-all group">
+      <td className="py-4 px-4 w-[25%]">
         <div className="flex flex-col">
-          <span className="font-semibold text-blue-400 group-hover:text-blue-300 transition-colors">
+          <span className="font-bold text-blue-400 group-hover:text-blue-300 transition-colors truncate">
             {action.name}
           </span>
-          <span className="text-xs text-gray-500">Action</span>
+          <span className="text-[9px] font-black text-white/20 uppercase tracking-widest mt-0.5">Physical Action</span>
         </div>
       </td>
-      <td className="py-3 px-4 text-sm text-gray-300 w-1/6">
+      <td className="py-4 px-4 text-xs text-gray-400 w-[15%]">
         {action.range}
       </td>
       
       {/* HIT COLUMN */}
-      <td className="py-3 px-4 w-1/6">
-        <div className="flex items-center gap-1 relative">
+      <td className="py-4 px-4 w-[15%]">
+        <div className="flex items-center gap-2 relative">
           <button
             onClick={() => handleHitRoll("hit_normal")}
-            className="flex items-center justify-center border border-border bg-card hover:border-gold hover:text-gold transition-colors px-3 py-2 rounded-md font-bold text-lg min-w-[3rem]"
+            className="flex items-center justify-center border border-white/10 bg-white/5 hover:border-gold hover:text-gold transition-all px-3 py-1.5 rounded-xl font-black text-sm min-w-[3.5rem] shadow-sm active:scale-95"
           >
             {action.hitBonus >= 0 ? `+${action.hitBonus}` : action.hitBonus}
           </button>
           <button 
              onClick={handleHitClick}
-             className="p-1 rounded text-gray-500 hover:text-gold transition-colors"
+             className="p-2 rounded-lg text-gray-600 hover:text-gold hover:bg-gold/10 transition-all"
           >
              <MoreVertical className="w-4 h-4" />
           </button>
           
           {showHitMenu && (
-            <div className="absolute top-full left-0 mt-1 z-20 w-40 bg-card border border-border rounded-md shadow-xl flex flex-col overflow-hidden">
+            <div className="absolute top-full left-0 mt-2 z-[2005] w-48 bg-[#111] border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden p-1 backdrop-blur-xl">
               <button 
                 onClick={() => handleHitRoll("hit_normal")}
-                className="px-4 py-2 text-left hover:bg-dark text-sm border-b border-border/50 flex items-center"
+                className="px-4 py-3 text-left hover:bg-white/5 rounded-xl text-xs font-bold text-gray-400 hover:text-white flex items-center gap-3 transition-colors"
               >
-                <Target className="w-4 h-4 mr-2 text-gray-400" />
-                Normal
+                <Target className="w-4 h-4 text-gray-500" />
+                Normal Strike
               </button>
               <button 
                 onClick={() => handleHitRoll("hit_adv")}
-                className="px-4 py-2 text-left hover:bg-dark text-sm border-b border-border/50 text-green-400 flex items-center"
+                className="px-4 py-3 text-left hover:bg-green-500/10 rounded-xl text-xs font-bold text-green-500 flex items-center gap-3 transition-colors"
               >
-                <Crosshair className="w-4 h-4 mr-2" />
-                Advantage
+                <Crosshair className="w-4 h-4" />
+                With Advantage
               </button>
               <button 
                 onClick={() => handleHitRoll("hit_disadv")}
-                className="px-4 py-2 text-left hover:bg-dark text-sm text-red-400 flex items-center"
+                className="px-4 py-3 text-left hover:bg-red-500/10 rounded-xl text-xs font-bold text-red-500 flex items-center gap-3 transition-colors"
               >
-                <ShieldAlert className="w-4 h-4 mr-2" />
-                Disadvantage
+                <ShieldAlert className="w-4 h-4" />
+                With Disadvantage
               </button>
             </div>
           )}
@@ -151,17 +151,17 @@ export default function ActionRow({ action, playerName, onRoll, onEdit, onDelete
       </td>
 
       {/* DAMAGE COLUMN */}
-      <td className="py-3 px-4 w-1/6">
+      <td className="py-4 px-4 w-[20%]">
         <div className="flex items-center gap-2">
           <button
             onClick={() => handleDamageRoll(false)}
-            className="border border-border bg-card hover:border-gold hover:text-gold transition-colors px-3 py-2 rounded-md text-sm font-semibold tracking-wide"
+            className="border border-white/10 bg-white/5 hover:border-red-500/50 hover:text-red-400 transition-all px-3 py-1.5 rounded-xl text-xs font-black tracking-tighter active:scale-95 shadow-sm"
           >
             {action.damageDice}
           </button>
           <button
             onClick={() => handleDamageRoll(true)}
-            className="p-2 text-gray-500 hover:text-red-500 hover:bg-dark rounded-md transition-colors"
+            className="p-2 text-gray-600 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
             title="Critical Hit"
           >
             <FlaskConical className="w-4 h-4" />
@@ -169,17 +169,19 @@ export default function ActionRow({ action, playerName, onRoll, onEdit, onDelete
         </div>
       </td>
 
-      <td className="py-3 px-4 text-xs text-gray-400 max-w-xs truncate">
-        {action.notes}
+      <td className="py-4 px-4 w-[15%]">
+        <div className="text-[10px] text-gray-500 leading-relaxed font-medium line-clamp-2 hover:line-clamp-none transition-all cursor-help" title={action.notes}>
+          {action.notes || "-"}
+        </div>
       </td>
-      <td className="py-3 px-4 w-20">
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <td className="py-4 px-4 w-[10%]">
+        <div className="flex items-center gap-1.5 opacity-40 group-hover:opacity-100 transition-opacity">
           <button
             onClick={(e) => { e.stopPropagation(); onEdit(); }}
-            className="p-1.5 text-gray-500 hover:text-blue-400 hover:bg-blue-400/10 rounded transition-all"
+            className="p-2 text-gray-500 hover:text-blue-400 hover:bg-blue-400/10 rounded-xl transition-all"
             title="Edit Action"
           >
-            <Edit2 className="w-3.5 h-3.5" />
+            <Edit2 className="w-4 h-4" />
           </button>
           <button
             onClick={(e) => { 
@@ -188,10 +190,10 @@ export default function ActionRow({ action, playerName, onRoll, onEdit, onDelete
                 onDelete();
               }
             }}
-            className="p-1.5 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded transition-all"
+            className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
             title="Delete Action"
           >
-            <Trash2 className="w-3.5 h-3.5" />
+            <Trash2 className="w-4 h-4" />
           </button>
         </div>
       </td>

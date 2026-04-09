@@ -195,15 +195,17 @@ export default function Home() {
       updatePayload.senses = parsedCharacter.senses;
     }
 
-    const { error: playerError } = await supabase.from("players")
+    const { data: updatedPlayer, error: playerError } = await supabase.from("players")
       .update(updatePayload)
       .eq("room_id", roomUuid)
-      .eq("name", playerName);
+      .eq("name", playerName)
+      .select()
+      .single();
 
     if (playerError) {
       console.error("Failed to update player stats:", playerError);
-    } else {
-      fetchCurrentPlayerData(roomUuid, playerName);
+    } else if (updatedPlayer) {
+      setPlayerData(updatedPlayer); // Update internal state immediately
     }
 
     if (opt.importActions) {
@@ -266,7 +268,7 @@ export default function Home() {
       rollType: rollType,
       formula: formula,
       modifier: mod,
-      themeColor
+      themeColor: themeColor || '#ECC94B'
     });
   };
 

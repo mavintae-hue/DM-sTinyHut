@@ -36,27 +36,27 @@ export default function DiceCanvas({ channel, playerName, themeColor, onRollComp
 
       const diceBox = new DiceBox({
         container: containerRef.current, 
-        assetPath: "https://unpkg.com/@3d-dice/dice-box@1.1.3/dist/assets/",
+        assetPath: "https://unpkg.com/@3d-dice/dice-box@1.1.4/dist/assets/",
         theme: "default",
         themeColor: themeColor,
-        scale: 7.2, // 10% smaller than 8
-        spinForce: 15,
-        throwForce: 35, 
-        gravity: 2.5,
-        startingHeight: 15
+        scale: 7, 
+        spinForce: 10,
+        throwForce: 30, 
+        gravity: 2,
+        startingHeight: 12
       });
 
       diceBoxRef.current = diceBox;
 
+      console.log("DiceBox: Starting initialization...");
       diceBox.init().then(() => {
+        console.log("DiceBox: Initialization successful!");
         setIsReady(true);
         
-        // Setup ONE-TIME callback when dice finish rolling
         diceBox.onRollComplete = (results: any) => {
           const req = rollQueueRef.current.shift();
           if (!req) return;
 
-          // If it's the player who requested the roll, save it to DB
           if (req.playerName === playerName) {
             let modifier = req.modifier;
             let totalFromDice = 0;
@@ -72,8 +72,6 @@ export default function DiceCanvas({ channel, playerName, themeColor, onRollComp
             }
             
             let finalTotal = totalFromDice + modifier;
-
-            // Handling Advantage / Disadvantage for 2d20 logic
             let chosenDie = rolls[0] || 0;
             if (req.rollType === "hit_adv" && rolls.length === 2) {
               chosenDie = Math.max(...rolls);
@@ -86,7 +84,6 @@ export default function DiceCanvas({ channel, playerName, themeColor, onRollComp
             let isNat20 = (req.rollType.startsWith("hit_") && chosenDie === 20);
             let isNat1 = (req.rollType.startsWith("hit_") && chosenDie === 1);
 
-            // Use the ref to ensure we call the latest version of the prop
             onRollCompleteRef.current({
               playerName: req.playerName,
               actionName: req.actionName,
@@ -102,13 +99,13 @@ export default function DiceCanvas({ channel, playerName, themeColor, onRollComp
             });
           }
         };
-      }).catch((e: Error) => console.error("DiceBox failed to initialize. Assets might be missing.", e));
+      }).catch((e: Error) => {
+        console.error("DiceBox: Initialization failed!", e);
+      });
     }, 200);
 
-    return () => {
-      clearTimeout(initDelay);
-    };
-  }, []); // Run ONLY once on mount
+    return () => clearTimeout(initDelay);
+  }, []); 
 
   useEffect(() => {
     if (isReady && diceBoxRef.current) {
@@ -124,10 +121,8 @@ export default function DiceCanvas({ channel, playerName, themeColor, onRollComp
       const diceBox = diceBoxRef.current;
       if (!diceBox) return;
 
-      // Add to stable queue ref
       rollQueueRef.current.push(request);
 
-      // Sync dice color for this specific roll
       if (request.themeColor) {
         diceBox.updateConfig({ themeColor: request.themeColor });
       }
@@ -141,33 +136,31 @@ export default function DiceCanvas({ channel, playerName, themeColor, onRollComp
         .map(s => s.trim())
         .filter(s => s.toLowerCase().includes('d'));
       
+      console.log("DiceBox: Rolling", diceArray);
       try {
         diceBox.show();
-        // Use persistence-friendly .add() if possible, but safely
         if (typeof diceBox.add === 'function') {
           diceBox.add(diceArray);
         } else {
           diceBox.roll(diceArray);
         }
       } catch (err) {
-        console.error("Dice roll execution error:", err);
+        console.error("DiceBox: Roll failed!", err);
         try { diceBox.roll(diceArray); } catch (e) {}
       }
     };
 
     channel.on("broadcast", { event: "roll_request" }, listener);
 
-    return () => {
-      // Shared channel listeners are handled via the parent channel subscription
-    };
+    return () => {};
   }, [channel, isReady, playerName]);
 
   return (
     <div
-      id="dice-canvas"
+      id="dice-container"
       ref={containerRef}
-      className="fixed top-0 left-0 w-screen h-screen z-[9999] pointer-events-none"
-      style={{ background: "transparent" }}
+      className="fixed inset-0 z-[9999] pointer-events-none"
+      style={{ width: '100vw', height: '100vh', background: 'transparent' }}
     />
   );
 }

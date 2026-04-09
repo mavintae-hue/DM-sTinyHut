@@ -212,7 +212,13 @@ export default function BeyondDashboard({
               <ActionDashboard 
                 actions={actions}
                 playerName={playerName}
-                onRoll={(req) => onRoll(req.actionName, 0, req.rollType.includes('adv') ? 'adv' : req.rollType.includes('dis') ? 'dis' : 'normal', false, req.formula)}
+                onRoll={(req) => onRoll(
+                    req.actionName, 
+                    req.modifier, 
+                    req.rollType.includes('adv') ? 'adv' : req.rollType.includes('dis') ? 'dis' : 'normal', 
+                    req.rollType.includes('damage'), 
+                    req.formula
+                )}
                 onAddCustomAction={onAddCustomAction}
                 onUpdateAction={onUpdateAction}
                 onDeleteAction={onDeleteAction}

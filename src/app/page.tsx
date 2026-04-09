@@ -200,7 +200,11 @@ export default function Home() {
       .eq("room_id", roomUuid)
       .eq("name", playerName);
 
-    if (!playerError) fetchCurrentPlayerData(roomUuid, playerName);
+    if (playerError) {
+      console.error("Failed to update player stats:", playerError);
+    } else {
+      fetchCurrentPlayerData(roomUuid, playerName);
+    }
 
     if (opt.importActions) {
       // Smart Merge Actions

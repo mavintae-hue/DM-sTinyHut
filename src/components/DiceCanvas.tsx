@@ -149,7 +149,7 @@ export default function DiceCanvas({ channel, playerName, themeColor, onRollComp
          
          try {
            diceBox.show();
-           diceBox.roll(diceArray);
+           diceBox.add(diceArray);
          } catch (err) {
            console.error("Roll failed:", err);
          }

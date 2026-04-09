@@ -36,7 +36,7 @@ export default function DiceCanvas({ channel, playerName, themeColor, onRollComp
 
       const diceBox = new DiceBox({
         container: containerRef.current, 
-        assetPath: "/assets/dice-box/",
+        assetPath: "https://unpkg.com/@3d-dice/dice-box@1.1.3/dist/assets/",
         theme: "default",
         themeColor: themeColor,
         scale: 7.2, // 10% smaller than 8

@@ -149,9 +149,16 @@ export default function DiceCanvas({ channel, playerName, themeColor, onRollComp
          
          try {
            diceBox.show();
-           diceBox.add(diceArray);
+           // Attempt to use 'add' if available for stacking, otherwise fall back to 'roll'
+           if (typeof diceBox.add === 'function') {
+             diceBox.add(diceArray);
+           } else {
+             diceBox.roll(diceArray);
+           }
          } catch (err) {
-           console.error("Roll failed:", err);
+           console.error("Dice roll execution error:", err);
+           // Final fallback to the most basic roll if something went wrong
+           try { diceBox.roll(diceArray); } catch (e) {}
          }
       }
     });

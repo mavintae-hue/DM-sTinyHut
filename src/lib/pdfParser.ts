@@ -190,20 +190,25 @@ export async function parseDnDBeyondPdf(file: File): Promise<ParsedCharacter> {
   ];
   saveList.forEach(save => {
       // Try multiple common D&D Beyond field patterns for Saving Throws
-      const val = getAnn(`ST ${save.name}`) || getAnn(`${save.name} ST`) || getAnn(`${save.key.toUpperCase()} ST`);
+      const val = getAnn(`ST ${save.name}`) || 
+                  getAnn(`${save.name} ST`) || 
+                  getAnn(`${save.key.toUpperCase()} ST`) ||
+                  getAnn(new RegExp(`ST.*${save.name}`, 'i')) ||
+                  getAnn(new RegExp(`${save.name}.*ST`, 'i'));
       
-      if (val) {
+      if (val || true) { // Always push 6 saves, default to 0 mod if not found
           // Try multiple common patterns for Saving Throw Proficiency
           const prof = getAnn(`ST ${save.name} Prof`) || 
                        getAnn(`${save.name} ST Prof`) || 
                        getAnn(`Check Box ${save.name} ST`) || 
                        getAnn(`${save.key.charAt(0).toUpperCase()}${save.key.slice(1)}Prof`) ||
-                       getAnn(`${save.name.substring(0, 3)}Prof`);
+                       getAnn(`${save.name.substring(0, 3)}Prof`) ||
+                       getAnn(new RegExp(`ST.*${save.name}.*Prof`, 'i'));
           
           result.saves.push({
               name: save.name,
-              modifier: parseInt(val.replace(/[^-0-9]/g, '')) || 0,
-              isProficient: !!prof && !["Off", "No", ""].includes(prof.toString().trim())
+              modifier: val ? (parseInt(val.replace(/[^-0-9]/g, '')) || 0) : 0,
+              isProficient: !!prof && !["Off", "No", "", "0", "false"].includes(prof.toString().trim())
           });
       }
   });

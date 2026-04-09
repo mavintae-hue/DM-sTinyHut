@@ -620,7 +620,7 @@ export default function Home() {
         />
       </div>
 
-      <FloatingWidget title="Roll History" storageKey="roll-log" defaultPosition={{ x: 20, y: 120 }}>
+      <FloatingWidget title="Roll History" storageKey="roll-log" defaultPosition={{ x: 1300, y: 120 }}>
         <HistoryLog logs={logs} />
       </FloatingWidget>
 

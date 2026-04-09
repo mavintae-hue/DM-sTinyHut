@@ -13,7 +13,8 @@ interface SkillRowProps {
 }
 
 export default function SkillRow({ name, modifier, isProficient, type, onRoll, editable, onUpdate }: SkillRowProps) {
-  const modText = modifier >= 0 ? `+${modifier}` : modifier.toString();
+  const validModifier = typeof modifier === 'number' && !isNaN(modifier) ? modifier : 0;
+  const modText = validModifier >= 0 ? `+${validModifier}` : validModifier.toString();
 
   const handleContextMenu = (e: React.MouseEvent) => {
     if (editable) return;
@@ -60,9 +61,9 @@ export default function SkillRow({ name, modifier, isProficient, type, onRoll, e
           onClick={(e) => e.stopPropagation()}
         />
       ) : (
-        <span className={`text-[13px] font-bold ${modifier >= 0 ? 'text-cyan-400' : 'text-red-400'} min-w-[24px] text-right`}>
-          {modText}
-        </span>
+         <span className={`text-[13px] font-bold ${validModifier >= 0 ? 'text-cyan-400' : 'text-red-400'} min-w-[24px] text-right`}>
+           {modText}
+         </span>
       )}
     </div>
   );

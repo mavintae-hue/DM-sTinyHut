@@ -358,8 +358,8 @@ export default function Home() {
 
   if (!roomUuid) {
     return (
-      <main className="min-h-screen p-8 bg-cover bg-center bg-no-repeat relative overflow-hidden flex flex-col" style={{ backgroundImage: "url('/bg-fantasy.png')" }}>
-        <div className="absolute inset-0 bg-[#050505]/80 backdrop-blur-xl"></div>
+      <main className="min-h-screen p-8 bg-cover bg-center bg-no-repeat relative overflow-hidden flex flex-col bg-fixed" style={{ backgroundImage: "url('/bg-fantasy.png')" }}>
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"></div>
         
         <header className="relative z-10 flex justify-between items-center max-w-7xl mx-auto w-full mb-16">
             <div className="flex items-center gap-4">
@@ -384,23 +384,7 @@ export default function Home() {
 
         <div className="relative z-10 max-w-7xl mx-auto w-full flex-1">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {/* Active Form if no rooms yet or user wants to add */}
-                <div className="bg-white/5 backdrop-blur-3xl border border-white/10 p-8 rounded-[2.5rem] flex flex-col justify-center">
-                    <h3 className="text-sm font-black text-white/40 uppercase tracking-widest mb-6">Summon Realm</h3>
-                    <form onSubmit={handleJoinRoom} className="space-y-4">
-                        <input 
-                            required 
-                            type="text" 
-                            className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-white outline-none focus:border-gold transition-all" 
-                            value={roomId} 
-                            onChange={e => setRoomId(e.target.value)} 
-                            placeholder="Realm Name..." 
-                        />
-                        <button id="join-btn" type="submit" className="w-full bg-gold text-darker font-black py-5 rounded-2xl shadow-lg shadow-gold/10 transform active:scale-95 transition-all">
-                            BEGIN JOURNEY
-                        </button>
-                    </form>
-                </div>
+
 
                 {/* Stored Realms */}
                 {savedRooms.map(r => (

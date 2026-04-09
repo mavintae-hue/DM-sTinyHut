@@ -1,0 +1,222 @@
+--- TEXT CONTENT ---
+x=271 y=696 str="SPECIES"
+x=271 y=722 str="CLASS & LEVEL"
+x=470 y=722 str="PLAYER NAME"
+x=69 y=695 str="CHARACTER NAME"
+x=480 y=695 str="EXPERIENCE POINTS"
+x=383 y=696 str="BACKGROUND"
+x=77 y=154 str="PASSIVE"
+x=100 y=154 str="PERCEPTION"
+x=106 y=29 str="SENSES"
+x=362 y=28 str="WEAPON ATTACKS & CANTRIPS"
+x=224 y=165 str="NAME"
+x=341 y=165 str="HIT"
+x=377 y=165 str="DAMAGE/TYPE"
+x=241 y=600 str="INITIATIVE"
+x=41 y=638 str="STRENGTH"
+x=41 y=561 str="DEXTERITY"
+x=34 y=484 str="CONSTITUTION"
+x=36 y=408 str="INTELLIGENCE"
+x=44 y=331 str="WISDOM"
+x=41 y=255 str="CHARISMA"
+x=125 y=512 str="SAVING THROWS"
+x=140 y=190 str="SKILLS"
+x=77 y=124 str="PASSIVE"
+x=100 y=124 str="INSIGHT"
+x=77 y=94 str="PASSIVE"
+x=100 y=94 str="INVESTIGATION"
+x=131 y=652 str="Strength"
+x=131 y=639 str="Dexterity"
+x=131 y=625 str="Constitution"
+x=131 y=612 str="Intelligence"
+x=131 y=598 str="Wisdom"
+x=131 y=585 str="Charisma"
+x=131 y=482 str="Acrobatics"
+x=131 y=469 str="Animal Handling"
+x=131 y=455 str="Arcana"
+x=131 y=442 str="Athletics"
+x=131 y=428 str="Deception"
+x=131 y=415 str="History"
+x=131 y=401 str="Insight"
+x=131 y=388 str="Intimidation"
+x=131 y=374 str="Investigation"
+x=131 y=361 str="Medicine"
+x=131 y=347 str="Nature"
+x=131 y=334 str="Perception"
+x=131 y=320 str="Performance"
+x=131 y=307 str="Persuasion"
+x=131 y=293 str="Religion"
+x=131 y=280 str="Sleight of Hand"
+x=131 y=266 str="Stealth"
+x=131 y=253 str="Survival"
+x=114 y=565 str="Saving Throw Modifiers"
+x=444 y=165 str="NOTES"
+x=389 y=191 str="ACTIONS"
+x=283 y=509 str="HEROIC"
+x=305 y=509 str="INSPIRATION"
+x=454 y=350 str="PROFICIENCIES &"
+x=506 y=350 str="TRAINING"
+x=296 y=541 str="DEFENSES"
+x=522 y=543 str="DEATH SAVES"
+x=443 y=543 str="HIT DICE"
+x=421 y=572 str="Total"
+x=506 y=573 str="SUCCESSES"
+x=511 y=558 str="FAILURES"
+x=480 y=600 str="HIT POINTS"
+x=433 y=646 str="Max HP"
+x=479 y=646 str="Current HP"
+x=535 y=646 str="Temp HP"
+x=300 y=363 str="SPEED"
+x=344 y=644 str="ARMOR"
+x=347 y=604 str="CLASS"
+x=120 y=8 str="TM & © 2018 Wizards of the Coast LLC. ©2018 D&D Beyond | All Rights Reserved. Permission is granted to photo copy this document for personal use."
+x=283 y=472 str="PROFICIENCY BONUS"
+x=283 y=431 str="ABILITY SAVE DC"
+
+--- ANNOTATIONS (FORM FIELDS) ---
+Name: CharacterName | Value: Faenra
+Name: CLASS  LEVEL | Value: Rogue 18
+Name: PLAYER NAME | Value: C2codeR
+Name: RACE | Value: Elf
+Name: BACKGROUND | Value: Sage
+Name: EXPERIENCE POINTS | Value: (Milestone)
+Name: STR | Value: 8
+Name: STRmod | Value: -1
+Name: DEX | Value: 22
+Name: DEXmod  | Value: +6
+Name: CON | Value: 14
+Name: CONmod | Value: +2
+Name: INT | Value: 8
+Name: INTmod | Value: -1
+Name: WIS | Value: 20
+Name: WISmod | Value: +5
+Name: CHA | Value: 10
+Name: CHamod | Value: +0
+Name: ST Strength | Value: +0
+Name: DexProf | Value: •
+Name: ST Dexterity | Value: +13
+Name: ST Constitution | Value: +3
+Name: IntProf | Value: •
+Name: ST Intelligence | Value: +6
+Name: WisProf | Value: •
+Name: ST Wisdom | Value: +12
+Name: ChaProf | Value: •
+Name: ST Charisma | Value: +7
+Name: Defenses | Value: Immunities - Magical Sleep
+Name: SaveModifiers | Value: +1 Bonus on saves 
+Advantage Made to avoid or end the
+Name: AcrobaticsProf | Value: E
+Name: Acrobatics | Value: +19
+Name: AcrobaticsMod | Value: DEX
+Name: Animal | Value: +6
+Name: AnimalMod | Value: WIS
+Name: ArcanaProf | Value: P
+Name: Arcana | Value: +6
+Name: ArcanaMod | Value: INT
+Name: Athletics | Value: +0
+Name: AthleticsMod | Value: STR
+Name: Deception | Value: +1
+Name: DeceptionMod | Value: CHA
+Name: HistoryProf | Value: P
+Name: History | Value: +6
+Name: HistoryMod | Value: INT
+Name: InsightProf | Value: P
+Name: Insight | Value: +12
+Name: InsightMod | Value: WIS
+Name: Intimidation | Value: +1
+Name: IntimidationMod | Value: CHA
+Name: InvestigationProf | Value: E
+Name: Investigation | Value: +12
+Name: InvestigationMod | Value: INT
+Name: Medicine | Value: +6
+Name: MedicineMod | Value: WIS
+Name: Nature | Value: +0
+Name: NatureMod | Value: INT
+Name: PerceptionProf | Value: E
+Name: Perception | Value: +18
+Name: PerceptionMod | Value: WIS
+Name: Performance | Value: +1
+Name: PerformanceMod | Value: CHA
+Name: Persuasion | Value: +1
+Name: PersuasionMod | Value: CHA
+Name: Religion | Value: +0
+Name: SleightofHand | Value: +12
+Name: StealthProf | Value: E
+Name: Stealth  | Value: +19
+Name: Survival | Value: +6
+Name: Passive1 | Value: 28
+Name: Passive2 | Value: 22
+Name: Passive3 | Value: 22
+Name: AdditionalSenses | Value: Darkvision 120 ft.
+Name: Init | Value: +7
+Name: AC | Value: 21
+Name: ProfBonus | Value: +6
+Name: Speed | Value: 35 ft. (Walking), 50 ft. (Flying), 35 ft. (Climbing)
+Name: MaxHP | Value: 129
+Name: TempHP | Value: --
+Name: Total | Value: 18d8
+Name: Check Box 12 | Value: Off
+Name: Check Box 13 | Value: Off
+Name: Check Box 14 | Value: Off
+Name: Check Box 15 | Value: Off
+Name: Check Box 16 | Value: Off
+Name: Check Box 17 | Value: Off
+Name: ProficienciesLang | Value: === ARMOR === 
+Light Armor 
+
+=== WEAPONS === 
+Crossbow, Hand, Firearms, Rapier, Scimitar, Shortsword, Simple Weapons, Whip 
+
+=== TOOLS === 
+Calligrapher's Supplies, Thieves' Tools 
+
+=== LANGUAGES === 
+Common, Common Sign Language, Dwarvish, Elvish, Thieves’ Cant
+Name: ReligionMod | Value: INT
+Name: SleightofHandMod | Value: DEX
+Name: StealthMod | Value: DEX
+Name: SurvivalMod | Value: WIS
+Name: Actions1 | Value: === ACTIONS === 
+Standard Actions 
+     Attack, Magic, Dash, Disengage, Dodge, Help, Hide, Ready, Search, Utilize, Opportunity Attack, Grapple, Shove, Improvise, Two-Weapon Fighting, Interact with an Object, Study, Influence 
+
+=== BONUS ACTIONS === 
+Cunning Action 
+     On your turn, you can take one of the following actions as a Bonus Action: Dash, Disengage, or Hide. 
+
+Fast Hands: Sleight of Hand 
+     Make a Dexterity (Sleight of Hand) check to pick a lock or disarm a trap with Thieves’ Tools or to pick a pocket.
+Name: Actions2 | Value: Fast Hands: Use Magic Item 
+     Take the Magic action to use a magic item that requires that action. 
+
+Fast Hands: Utilize 
+     Take the Utilize action to use an object. 
+
+Steady Aim 
+     You give yourself Advantage on your next attack roll on the current turn, provided that you haven’t moved during this turn. After you use it, your Speed is 0 until the end of the current turn. 
+
+=== REACTIONS === 
+Uncanny Dodge
+Name: Wpn Name | Value: Dagger
+Name: Wpn1 AtkBonus | Value: +12
+Name: Wpn1 Damage | Value: 1d4+6 Piercing
+Name: Wpn Notes 1 | Value: Simple, Finesse, Light, Thrown, Nick, Range (20/60), True Strike: 3d6+5 Radiant, Booming Blade: 3d8 Thunder, 4d8 Thunder
+Name: Wpn Name 2 | Value: Shortbow of Warning
+Name: Wpn2 AtkBonus  | Value: +12
+Name: Wpn2 Damage  | Value: 1d6+6 Piercing
+Name: Wpn Notes 2 | Value: Simple, Ammunition, Range, Two-Handed, Vex, Range (80/320)
+Name: Wpn Name 3 | Value: Vicious Antimatter Rifle
+Name: Wpn3 AtkBonus   | Value: +12
+Name: Wpn3 Damage  | Value: 6d8+6 Necrotic
+Name: Wpn Notes 3 | Value: +2d6 Necrotic, Firearms, Ammunition (Firearms), Range, Reload, Two-Handed, Sap, Range (120/360)
+Name: Wpn Name 4 | Value: Vicious Laser Pistol
+Name: Wpn4 AtkBonus | Value: +12
+Name: Wpn4 Damage | Value: 3d6+6 Radiant
+Name: Wpn Notes 4 | Value: +2d6 Radiant, Firearms, Ammunition (Firearms), Range, Reload, Vex, Range (40/120)
+Name: Wpn Name 5 | Value: Unarmed Strike
+Name: Wpn5 AtkBonus | Value: +5
+Name: Wpn5 Damage | Value: 0 Bludgeoning
+Name: Wpn Name 6 | Value: Viciouse Antimatter True Stike
+Name: Wpn6 AtkBonus | Value: +11
+Name: Wpn6 Damage | Value: 6d8+10 Necrotic
+Name: Inspiration | Value: Off

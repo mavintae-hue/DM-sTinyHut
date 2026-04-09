@@ -40,20 +40,12 @@ export async function parseDnDBeyondPdf(file: File): Promise<ParsedCharacter> {
   const pdf = await loadingTask.promise;
   
   const page = await pdf.getPage(1);
+  const annotations = await page.getAnnotations();
+  // Get text content as fallback for AC/Speed sometimes
   const textContent = await page.getTextContent();
   const items = textContent.items as any[];
-  
-  // Group text items by Y coordinate (rows)
-  const rows: { [key: number]: any[] } = {};
-  items.forEach(item => {
-    const y = Math.round(item.transform[5]);
-    if (!rows[y]) rows[y] = [];
-    rows[y].push(item);
-  });
-  
-  const sortedY = Object.keys(rows).map(Number).sort((a, b) => b - a);
-  const sortedRows = sortedY.map(y => rows[y].sort((a, b) => a.transform[4] - b.transform[4]));
 
+  // Define the result object
   const result: ParsedCharacter = {
     name: "Unknown",
     classLevel: "",
@@ -70,116 +62,86 @@ export async function parseDnDBeyondPdf(file: File): Promise<ParsedCharacter> {
     actions: []
   };
 
-  let inSkills = false;
-  let inSaves = false;
-  let inAttacks = false;
-  let attackHeaderFound = false;
+  // Helper to find annotation by name regex or exact string
+  const getAnn = (name: string | RegExp) => {
+    const ann = annotations.find(a => a.fieldName && (typeof name === 'string' ? a.fieldName === name : name.test(a.fieldName)));
+    return ann ? ann.fieldValue || "" : "";
+  };
 
-  for (let i = 0; i < sortedRows.length; i++) {
-    const row = sortedRows[i];
-    const rowText = row.map(item => item.str).join(' ');
-    const y = sortedY[i];
+  // --- Extract Identity ---
+  result.name = getAnn("CharacterName") || result.name;
+  result.classLevel = getAnn("CLASS  LEVEL") || getAnn(/class.*level/i) || result.classLevel;
+  result.race = getAnn("RACE") || result.race;
 
-    // --- CHARACTER IDENTITY ---
-    if (rowText.includes("CHARACTER NAME")) {
-       result.name = sortedRows[i-1]?.map(it => it.str).join(' ').trim() || result.name;
-    }
-    if (rowText.includes("CLASS & LEVEL")) {
-       result.classLevel = sortedRows[i-1]?.map(it => it.str).join(' ').trim() || "";
-    }
-    if (rowText.includes("SPECIES")) {
-       result.race = sortedRows[i-1]?.map(it => it.str).join(' ').trim() || "";
-    }
+  // --- Extract Core Stats ---
+  const hpRaw = getAnn("MaxHP") || getAnn(/hp.*max/i);
+  result.hpMax = parseInt(hpRaw) || 10;
+  result.hpCurrent = result.hpMax;
 
-    // --- COMBAT STATS (COORDINATE BASED) ---
-    // Proficiency Bonus (Center, around Y 720)
-    if (rowText.includes("PROFICIENCY BONUS")) {
-       const val = sortedRows[i-1]?.map(it => it.str).join(' ').trim();
-       result.proficiencyBonus = parseInt(val.replace(/[^-0-9]/g, '')) || 2;
-    }
-    // Armor Class (Center, around Y 720)
-    if (rowText.includes("ARMOR CLASS")) {
-       const val = sortedRows[i-1]?.map(it => it.str).join(' ').trim();
-       result.ac = parseInt(val) || 10;
-    }
-    // Initiative
-    if (rowText.includes("INITIATIVE")) {
-       const val = sortedRows[i-1]?.map(it => it.str).join(' ').trim();
-       result.initiative = parseInt(val.replace(/[^-0-9]/g, '')) || 0;
-    }
-    // HP
-    if (rowText.includes("Max HP")) {
-       const val = sortedRows[i-1]?.map(it => it.str).join(' ').trim();
-       result.hpMax = parseInt(val) || 10;
-       result.hpCurrent = result.hpMax; // Start full
-    }
-    // Speed
-    if (rowText.includes("SPEED") && !rowText.includes("CLASS")) {
-       result.speed = sortedRows[i-1]?.map(it => it.str).join(' ').trim() || "30 ft.";
-    }
+  const acRaw = getAnn("AC");
+  result.ac = parseInt(acRaw) || 10;
 
-    // --- ABILITY SCORES (LEFT BOXES) ---
-    // STR: ~685, DEX: ~586, CON: ~487, INT: ~388, WIS: ~288, CHA: ~189
-    if (y > 670 && y < 700 && row[0]?.transform[4] < 120) result.abilityScores.str = parseInt(rowText) || result.abilityScores.str;
-    if (y > 575 && y < 600 && row[0]?.transform[4] < 120) result.abilityScores.dex = parseInt(rowText) || result.abilityScores.dex;
-    if (y > 475 && y < 505 && row[0]?.transform[4] < 120) result.abilityScores.con = parseInt(rowText) || result.abilityScores.con;
-    if (y > 375 && y < 405 && row[0]?.transform[4] < 120) result.abilityScores.int = parseInt(rowText) || result.abilityScores.int;
-    if (y > 275 && y < 305 && row[0]?.transform[4] < 120) result.abilityScores.wis = parseInt(rowText) || result.abilityScores.wis;
-    if (y > 175 && y < 205 && row[0]?.transform[4] < 120) result.abilityScores.cha = parseInt(rowText) || result.abilityScores.cha;
+  const initRaw = getAnn("Init");
+  result.initiative = parseInt(initRaw.replace(/[^-0-9]/g, '')) || 0;
 
-    // --- SAVES & SKILLS ---
-    if (rowText.includes("SAVING THROWS")) { inSaves = true; inSkills = false; continue; }
-    if (rowText.includes("SKILLS") && !rowText.includes("ADDITIONAL")) { inSkills = true; inSaves = false; continue; }
-    
-    if (inSaves || inSkills) {
-      if (rowText.includes("PASSIVE")) { inSkills = false; inSaves = false; }
-      
-      const modStr = row.find(it => it.str.match(/[+-]\d+/))?.str;
-      if (modStr) {
-        const nameText = row.map(it => it.str).join(' ').replace(modStr, '').trim();
-        // Identify if name is a skill or save
-        const isProf = row.some(it => it.str === 'E' || it.str === 'P'); // D&D Beyond uses symbols for proficiency
+  result.speed = getAnn("Speed") || "30 ft.";
+  
+  const profRaw = getAnn("ProfBonus");
+  result.proficiencyBonus = parseInt(profRaw.replace(/[^-0-9]/g, '')) || 2;
+
+  // --- Extract Ability Scores ---
+  const extractScore = (key: string, name: string) => {
+     const val = getAnn(name);
+     if (val) result.abilityScores[key] = parseInt(val) || result.abilityScores[key];
+  };
+  extractScore('str', 'STR');
+  extractScore('dex', 'DEX');
+  extractScore('con', 'CON');
+  extractScore('int', 'INT');
+  extractScore('wis', 'WIS');
+  extractScore('cha', 'CHA');
+
+  // --- Extract Weapons (Actions) ---
+  // Weapons usually follow Wpn Name, Wpn1 AtkBonus, Wpn1 Damage
+  for (let i = 1; i <= 10; i++) {
+     const nameKey = i === 1 ? "Wpn Name" : `Wpn Name ${i}`;
+     const wpnName = getAnn(nameKey);
+     
+     if (wpnName) {
+        const hitBonus = parseInt(getAnn(`Wpn${i} AtkBonus`).replace(/[^-0-9]/g, '')) || 0;
+        const damage = getAnn(`Wpn${i} Damage`) || "0";
+        const notes = getAnn(`Wpn Notes ${i}`) || "";
         
-        const item = {
-          name: nameText.split(' ').filter(w => w.length > 2).join(' '),
-          modifier: parseInt(modStr),
-          isProficient: isProf
-        };
-        
-        if (inSaves) result.saves.push(item);
-        else result.skills.push(item);
-      }
-    }
-
-    // --- ATTACKS ---
-    if (rowText.toUpperCase().includes("ATTACKS") || rowText.toUpperCase().includes("ACTIONS") || rowText.toUpperCase().includes("CANTRIPS")) { inAttacks = true; }
-    
-    if (inAttacks) {
-      if ((rowText.toUpperCase().includes("NAME") && rowText.toUpperCase().includes("HIT")) || rowText.toUpperCase().includes("ATK BONUS")) { attackHeaderFound = true; continue; }
-      if (attackHeaderFound) {
-        const namePart = row.filter(it => it.transform[4] < 150).map(it => it.str).join(' ').trim();
-        const hitPart = row.filter(it => it.transform[4] >= 150 && it.transform[4] < 220).map(it => it.str).join(' ').trim();
-        const damagePart = row.filter(it => it.transform[4] >= 220 && it.transform[4] < 380).map(it => it.str).join(' ').trim();
-        const notesPart = row.filter(it => it.transform[4] >= 380).map(it => it.str).join(' ').trim();
-
-        if (namePart && (hitPart || damagePart) && namePart.length > 2) {
-          const diceMatch = damagePart.match(/(\d+d\d+([+-]\d+)?)/i);
-          const hitBonus = parseInt(hitPart.replace(/[^-0-9]/g, '')) || 0;
-          
-          // Only add if it looks like a real action
-          if (hitBonus !== 0 || diceMatch) {
-            result.actions.push({
-              name: namePart,
-              hitBonus: hitBonus,
-              damageDice: diceMatch ? diceMatch[0] : (damagePart || "0"),
-              range: rowText.includes("ft") ? "Range" : "Melee",
-              notes: notesPart
-            });
-          }
+        // Try to identify range vs melee from notes or name
+        let rangeType = "Melee";
+        if (notes.toLowerCase().includes("range") || wpnName.toLowerCase().includes("bow") || wpnName.toLowerCase().includes("rifle") || wpnName.toLowerCase().includes("pistol")) {
+            rangeType = "Range";
         }
-      }
-    }
+
+        const diceMatch = damage.match(/(\d+d\d+([+-]\d+)?)/i);
+        
+        result.actions.push({
+           name: wpnName,
+           hitBonus: hitBonus,
+           damageDice: diceMatch ? diceMatch[0] : damage,
+           range: rangeType,
+           notes: notes
+        });
+     }
   }
+
+  // --- Extract Skills ---
+  const skillList = ["Acrobatics", "Animal", "Arcana", "Athletics", "Deception", "History", "Insight", "Intimidation", "Investigation", "Medicine", "Nature", "Perception", "Performance", "Persuasion", "Religion", "SleightofHand", "Stealth", "Survival"];
+  skillList.forEach(skill => {
+      const val = getAnn(skill);
+      if (val) {
+          result.skills.push({
+              name: skill === "Animal" ? "Animal Handling" : skill === "SleightofHand" ? "Sleight of Hand" : skill,
+              modifier: parseInt(val.replace(/[^-0-9]/g, '')) || 0,
+              isProficient: !!getAnn(`${skill}Prof`)
+          });
+      }
+  });
 
   return result;
 }

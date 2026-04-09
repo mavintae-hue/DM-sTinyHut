@@ -187,15 +187,15 @@ export default function BeyondDashboard({
                 { name: "Wisdom", modifier: getMod(player.ability_scores?.wis || 10), isProficient: false },
                 { name: "Charisma", modifier: getMod(player.ability_scores?.cha || 10), isProficient: false }
               ]).map((save: any, i: number) => {
-                const baseMod = getMod(player.ability_scores?.[save.name?.toLowerCase().substring(0, 3)] || 10);
-                const finalMod = save.modifier !== undefined ? save.modifier : baseMod;
+                const baseMod = getMod(player.ability_scores?.[save?.name?.toLowerCase()?.substring(0, 3)] || 10);
+                const finalMod = save?.modifier !== undefined ? save.modifier : baseMod;
                 
                 return (
                   <SkillRow 
                     key={i} 
-                    name={save.name} 
+                    name={save?.name || "Unknown"} 
                     modifier={finalMod} 
-                    isProficient={save.isProficient} 
+                    isProficient={!!save?.isProficient} 
                     type="save" 
                     onRoll={onRoll} 
                     editable={isEditMode}

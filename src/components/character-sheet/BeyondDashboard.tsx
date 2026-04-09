@@ -20,6 +20,7 @@ interface BeyondDashboardProps {
   onImportActions: (character: any, options?: any) => void;
   onUpdateHp: (current: number) => void;
   onUpdateAvatar: (input: string | File) => void;
+  onUpdatePlayer: (updates: any) => void;
 }
 
 export default function BeyondDashboard({
@@ -32,9 +33,11 @@ export default function BeyondDashboard({
   onDeleteAction,
   onImportActions,
   onUpdateHp,
-  onUpdateAvatar
+  onUpdateAvatar,
+  onUpdatePlayer
 }: BeyondDashboardProps) {
   const [activeTab, setActiveTab] = useState<'actions' | 'spells' | 'features'>('actions');
+  const [isEditMode, setIsEditMode] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number, y: number, label: string, onSelect: (type: 'normal' | 'adv' | 'dis') => void } | null>(null);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState(player?.avatar_url || "");

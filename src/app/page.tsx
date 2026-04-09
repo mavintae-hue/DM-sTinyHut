@@ -250,6 +250,29 @@ export default function Home() {
     }
   };
 
+  const handleUpdatePlayer = async (updates: any) => {
+    if (!playerData?.id) return;
+    
+    // Optimistic update
+    const prevData = { ...playerData };
+    setPlayerData({ ...playerData, ...updates });
+
+    const { data, error } = await supabase
+      .from("players")
+      .update(updates)
+      .eq("id", playerData.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Failed to update player:", error);
+      setPlayerData(prevData); // Rollback
+    } else if (data) {
+      setPlayerData(data);
+      if (updates.name) setPlayerName(data.name);
+    }
+  };
+
   const handleRoll = (label: string, mod: number, type: 'normal' | 'adv' | 'dis', isDamage = false, formulaUrl?: string) => {
     let formula = formulaUrl || `1d20${mod >= 0 ? '+' : ''}${mod}`;
     let rollType: RollRequest['rollType'] = 'custom';
@@ -590,6 +613,7 @@ export default function Home() {
           onImportActions={handleImportActions}
           onUpdateHp={handleUpdateHp}
           onUpdateAvatar={handleUpdateAvatar}
+          onUpdatePlayer={handleUpdatePlayer}
         />
       </div>
 

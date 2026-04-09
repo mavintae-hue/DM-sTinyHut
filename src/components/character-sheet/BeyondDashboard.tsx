@@ -5,7 +5,7 @@ import StatHexagon from "./StatHexagon";
 import CombatBox from "./CombatBox";
 import SkillRow from "./SkillRow";
 import RollContextMenu from "./RollContextMenu";
-import { Plus, Import, Search, Shield, Zap, Footprints, Heart, Wand2, Sword, Info } from "lucide-react";
+import { Plus, Import, Search, Shield, Zap, Footprints, Heart, Wand2, Sword, Info, Edit3, Camera, Link, Image as ImageIcon, X } from "lucide-react";
 import ActionDashboard from "../ActionDashboard";
 
 interface BeyondDashboardProps {
@@ -16,8 +16,9 @@ interface BeyondDashboardProps {
   onAddCustomAction: (action: any) => void;
   onUpdateAction: (action: any) => void;
   onDeleteAction: (id: string) => void;
-  onImportActions: (actions: any[]) => void;
+  onImportActions: (character: any) => void;
   onUpdateHp: (current: number) => void;
+  onUpdateAvatar: (url: string) => void;
 }
 
 export default function BeyondDashboard({
@@ -29,10 +30,13 @@ export default function BeyondDashboard({
   onUpdateAction,
   onDeleteAction,
   onImportActions,
-  onUpdateHp
+  onUpdateHp,
+  onUpdateAvatar
 }: BeyondDashboardProps) {
   const [activeTab, setActiveTab] = useState<'actions' | 'spells' | 'features'>('actions');
   const [contextMenu, setContextMenu] = useState<{ x: number, y: number, label: string, onSelect: (type: 'normal' | 'adv' | 'dis') => void } | null>(null);
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState(player?.avatar_url || "");
 
   // Ability Modifiers Calculation
   const getMod = (score: number) => Math.floor((score - 10) / 2);
@@ -58,13 +62,18 @@ export default function BeyondDashboard({
       {/* Top Header Bar */}
       <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between p-8 bg-[#151515]/80 backdrop-blur-xl border border-white/5 rounded-[2.5rem] shadow-2xl">
         <div className="flex items-center gap-6">
-          <div className="relative group">
-            <div className="absolute -inset-1 bg-gradient-to-tr from-cyan-500 to-blue-600 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
-            <img 
-              src={player.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${player.name}`} 
-              className="relative w-20 h-20 rounded-full border-2 border-white/10 object-cover bg-darker shadow-inner"
-              alt="Avatar"
-            />
+          <div className="relative group cursor-pointer" onClick={() => setShowAvatarModal(true)}>
+            <div className="absolute -inset-1 bg-gradient-to-tr from-cyan-500 to-blue-600 rounded-full blur opacity-25 group-hover:opacity-100 transition duration-500"></div>
+            <div className="relative w-20 h-20">
+                <img 
+                src={player.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${player.name}`} 
+                className="w-full h-full rounded-full border-2 border-white/10 object-cover bg-darker shadow-inner transition-transform group-hover:scale-95"
+                alt="Avatar"
+                />
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Camera className="w-6 h-6 text-white" />
+                </div>
+            </div>
             <div className="absolute -bottom-1 -right-1 bg-darker border border-white/10 px-2 py-0.5 rounded-full text-[10px] font-bold text-gray-400">
               LVL {player.class_level?.match(/\d+/)?.[0] || '??'}
             </div>
@@ -203,6 +212,61 @@ export default function BeyondDashboard({
           onSelect={contextMenu.onSelect}
           onClose={() => setContextMenu(null)}
         />
+      )}
+
+      {/* Avatar Edit Modal */}
+      {showAvatarModal && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[1000] flex items-center justify-center p-4 animate-in fade-in duration-300">
+            <div className="bg-[#111] border border-white/10 rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden p-8">
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-xl font-black text-white uppercase tracking-tighter">Avatar Chamber</h3>
+                    <button onClick={() => setShowAvatarModal(false)} className="p-2 hover:bg-white/5 rounded-full transition-colors">
+                        <X className="w-5 h-5 text-gray-500" />
+                    </button>
+                </div>
+
+                <div className="space-y-6">
+                    <div className="flex justify-center">
+                        <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-gold/20 shadow-2xl">
+                            <img 
+                                src={avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${player.name}`} 
+                                className="w-full h-full object-cover"
+                                alt="Preview"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-white/40 uppercase tracking-widest ml-2">Image URL</label>
+                            <div className="relative">
+                                <Link className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gold/50" />
+                                <input 
+                                    type="text" 
+                                    value={avatarUrl}
+                                    onChange={(e) => setAvatarUrl(e.target.value)}
+                                    placeholder="https://..."
+                                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm text-white focus:border-gold outline-none transition-all"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col gap-2 pt-4">
+                            <button 
+                                onClick={() => {
+                                    onUpdateAvatar(avatarUrl);
+                                    setShowAvatarModal(false);
+                                }}
+                                className="w-full bg-gold text-darker font-black py-4 rounded-2xl shadow-lg shadow-gold/10 active:scale-95 transition-all"
+                            >
+                                SAVE ESSENCE
+                            </button>
+                            <p className="text-[10px] text-center text-gray-500 uppercase tracking-widest">or use default magic avatar</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
       )}
     </div>
   );

@@ -234,6 +234,13 @@ export default function Home() {
     await supabase.from("players").update({ hp_current: current }).eq("room_id", roomUuid).eq("name", playerName);
   };
 
+  const handleUpdateAvatar = async (url: string) => {
+    if (!roomUuid) return;
+    setPlayerAvatar(url);
+    setPlayerData({ ...playerData, avatar_url: url });
+    await supabase.from("players").update({ avatar_url: url }).eq("room_id", roomUuid).eq("name", playerName);
+  };
+
   const handleUpdateAction = async (updatedAction: any) => {
     setActions(actions.map(a => a.id === updatedAction.id ? updatedAction : a));
     await supabase.from("actions").update({
@@ -471,6 +478,7 @@ export default function Home() {
             onDeleteAction={handleDeleteAction}
             onImportActions={handleImportActions}
             onUpdateHp={handleUpdateHp}
+            onUpdateAvatar={handleUpdateAvatar}
           />
       </div>
 

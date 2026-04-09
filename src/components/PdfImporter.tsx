@@ -56,7 +56,7 @@ export default function PdfImporter({ onImport, onClose }: PdfImporterProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[1000] flex items-center justify-center p-4">
       <div className="bg-[#111] border border-white/10 rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
         <div className="flex justify-between items-center p-6 border-b border-white/5 bg-white/5">
           <div className="flex items-center gap-3">

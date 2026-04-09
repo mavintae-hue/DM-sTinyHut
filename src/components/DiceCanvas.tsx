@@ -16,6 +16,7 @@ export default function DiceCanvas({ channel, playerName, themeColor, onRollComp
   const containerRef = useRef<HTMLDivElement>(null);
   const diceBoxRef = useRef<any>(null);
   const currentRollRequestRef = useRef<RollRequest | null>(null);
+  const rollQueueRef = useRef<RollRequest[]>([]);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
@@ -40,14 +41,13 @@ export default function DiceCanvas({ channel, playerName, themeColor, onRollComp
       });
 
     diceBoxRef.current = diceBox;
-    const rollQueue: RollRequest[] = [];
 
     diceBox.init().then(() => {
       setIsReady(true);
       
       // Setup callback when dice finish rolling
       diceBox.onRollComplete = (results: any) => {
-        const req = rollQueue.shift(); // Take the oldest request from queue
+        const req = rollQueueRef.current.shift(); // Take the oldest request from queue
         if (!req) return;
 
         // If it's the player who requested the roll, save it to DB
@@ -100,9 +100,6 @@ export default function DiceCanvas({ channel, playerName, themeColor, onRollComp
            });
         }
       };
-
-      // Expose rollQueue to the other effect via ref-like behavior on diceBox instance
-      (diceBox as any)._rollQueue = rollQueue;
     })
 .catch((e: Error) => console.error("DiceBox failed to initialize. Assets might be missing.", e));
     
@@ -128,9 +125,8 @@ export default function DiceCanvas({ channel, playerName, themeColor, onRollComp
       const diceBox = diceBoxRef.current;
       if (!diceBox) return;
 
-      // Access the queue we attached during initialization
-      const queue = (diceBox as any)._rollQueue || [];
-      queue.push(request);
+      // Add to stable queue ref
+      rollQueueRef.current.push(request);
 
       // Ensure we have diceBox
       if (diceBox) {
@@ -151,8 +147,8 @@ export default function DiceCanvas({ channel, playerName, themeColor, onRollComp
          const diceArray = diceNotation.split('+').map(s => s.trim()).filter(Boolean);
          
          try {
-           diceBoxRef.current.show();
-           diceBoxRef.current.roll(diceArray);
+           diceBox.show();
+           diceBox.roll(diceArray);
          } catch (err) {
            console.error("Roll failed:", err);
          }

@@ -152,24 +152,30 @@ export async function parseDnDBeyondPdf(file: File): Promise<ParsedCharacter> {
     }
 
     // --- ATTACKS ---
-    if (rowText.includes("WEAPON ATTACKS & CANTRIPS")) { inAttacks = true; continue; }
+    if (rowText.toUpperCase().includes("ATTACKS") || rowText.toUpperCase().includes("ACTIONS") || rowText.toUpperCase().includes("CANTRIPS")) { inAttacks = true; }
+    
     if (inAttacks) {
-      if (rowText.includes("NAME") && rowText.includes("HIT")) { attackHeaderFound = true; continue; }
+      if ((rowText.toUpperCase().includes("NAME") && rowText.toUpperCase().includes("HIT")) || rowText.toUpperCase().includes("ATK BONUS")) { attackHeaderFound = true; continue; }
       if (attackHeaderFound) {
         const namePart = row.filter(it => it.transform[4] < 150).map(it => it.str).join(' ').trim();
         const hitPart = row.filter(it => it.transform[4] >= 150 && it.transform[4] < 220).map(it => it.str).join(' ').trim();
         const damagePart = row.filter(it => it.transform[4] >= 220 && it.transform[4] < 380).map(it => it.str).join(' ').trim();
         const notesPart = row.filter(it => it.transform[4] >= 380).map(it => it.str).join(' ').trim();
 
-        if (namePart && hitPart && (damagePart || hitPart.startsWith('+'))) {
+        if (namePart && (hitPart || damagePart) && namePart.length > 2) {
           const diceMatch = damagePart.match(/(\d+d\d+([+-]\d+)?)/i);
-          result.actions.push({
-            name: namePart,
-            hitBonus: parseInt(hitPart.replace(/[^-0-9]/g, '')) || 0,
-            damageDice: diceMatch ? diceMatch[0] : (damagePart || "0"),
-            range: "5 ft.",
-            notes: notesPart
-          });
+          const hitBonus = parseInt(hitPart.replace(/[^-0-9]/g, '')) || 0;
+          
+          // Only add if it looks like a real action
+          if (hitBonus !== 0 || diceMatch) {
+            result.actions.push({
+              name: namePart,
+              hitBonus: hitBonus,
+              damageDice: diceMatch ? diceMatch[0] : (damagePart || "0"),
+              range: rowText.includes("ft") ? "Range" : "Melee",
+              notes: notesPart
+            });
+          }
         }
       }
     }

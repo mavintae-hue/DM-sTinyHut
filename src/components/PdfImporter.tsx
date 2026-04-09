@@ -161,7 +161,7 @@ export default function PdfImporter({ onImport, onClose }: PdfImporterProps) {
             Cancel
           </button>
           <button 
-            disabled={selectedIds.length === 0 || !parsedResult}
+            disabled={!parsedResult}
             onClick={handleConfirm}
             className="px-8 py-2.5 rounded-xl text-sm font-black bg-gradient-to-br from-gold/90 to-gold text-darker disabled:opacity-30 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg"
           >

@@ -16,6 +16,7 @@ export default function DiceCanvas({ channel, playerName, themeColor, onRollComp
   const containerRef = useRef<HTMLDivElement>(null);
   const rollQueueRef = useRef<RollRequest[]>([]);
   const onRollCompleteRef = useRef(onRollComplete);
+  const diceBoxRef = useRef<any>(null);
   const [isReady, setIsReady] = useState(false);
 
   // Keep the callback ref up to date so the one-time init can always use the latest prop

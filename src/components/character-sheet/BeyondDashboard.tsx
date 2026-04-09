@@ -62,7 +62,7 @@ export default function BeyondDashboard({
   if (!player) return null;
 
   return (
-    <div className="w-full max-w-[1400px] mx-auto space-y-6 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="w-full max-w-[1700px] mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Top Header Bar */}
       <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between p-8 bg-[#151515]/80 backdrop-blur-xl border border-white/5 rounded-[2.5rem] shadow-2xl">
         <div className="flex items-center gap-6">

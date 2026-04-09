@@ -63,6 +63,7 @@ export default function Home() {
   const [showThemePicker, setShowThemePicker] = useState(false);
   const [splashAnimation, setSplashAnimation] = useState<{ type: "crit" | "fail", message: string, playerName?: string, playerAvatar?: string | null } | null>(null);
   const lastProcessedLogTimestamp = useRef<string | null>(null);
+  const [showRollLog, setShowRollLog] = useState(true);
 
   const [roomId, setRoomId] = useState("");
   const [roomUuid, setRoomUuid] = useState<string | null>(null);
@@ -500,6 +501,18 @@ export default function Home() {
                 </div>
               ))}
             </div>
+            {/* Roll Log toggle button */}
+            <button
+              onClick={() => setShowRollLog(!showRollLog)}
+              className={`p-2.5 rounded-xl transition-colors border text-xs font-black flex items-center gap-1.5 ${
+                showRollLog ? 'bg-gold/10 text-gold border-gold/30' : 'bg-white/5 border-white/5 text-gray-400 hover:bg-white/10'
+              }`}
+              title="Toggle Roll Log"
+            >
+              <span>🎲</span>
+              <span className="hidden sm:inline">LOG</span>
+              {logs.length > 0 && <span className="bg-gold text-darker rounded-full w-4 h-4 text-[10px] flex items-center justify-center font-black">{logs.length > 9 ? '9+' : logs.length}</span>}
+            </button>
             <button onClick={() => setShowThemePicker(!showThemePicker)} className="p-2.5 bg-white/5 rounded-xl hover:bg-white/10 transition-colors border border-white/5"><Paintbrush className="w-5 h-5" /></button>
             <button onClick={() => setShowColorPicker(!showColorPicker)} className="p-2.5 bg-white/5 rounded-xl hover:bg-white/10 transition-colors border border-white/5"><Palette className="w-5 h-5" /></button>
           </div>
@@ -558,10 +571,12 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Persistent Roll Log sidebar - fixed height, internal scroll */}
-      <aside className="hidden md:flex w-[320px] lg:w-[360px] bg-[#080808]/95 backdrop-blur-3xl border-l border-white/5 flex-col z-20 h-screen overflow-hidden">
-        <HistoryLog logs={logs} />
-      </aside>
+      {/* Persistent Roll Log sidebar - toggleable, internal scroll */}
+      {showRollLog && (
+        <aside className="flex w-[280px] lg:w-[320px] bg-[#080808]/95 backdrop-blur-3xl border-l border-white/5 flex-col z-20 h-screen overflow-hidden shrink-0 transition-all duration-300">
+          <HistoryLog logs={logs} />
+        </aside>
+      )}
 
       {splashAnimation && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center pointer-events-none animate-in fade-in duration-500">

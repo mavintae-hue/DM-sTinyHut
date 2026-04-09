@@ -19,7 +19,7 @@ export function registerDiceBox(box: any) {
     const item = _queue.shift();
     if (!item) return;
 
-    const { req, getPlayerName, onComplete } = item;
+    const { req, onComplete } = item;
 
     let totalFromDice = 0;
     const rolls: number[] = [];
@@ -54,6 +54,11 @@ export function registerDiceBox(box: any) {
       resultTotal: finalTotal,
       resultDetails: { rolls, modifier: req.modifier, formula: req.formula, isNat20, isNat1 },
     });
+
+    // Clear dice from screen after 2.5s so player can see the result
+    setTimeout(() => {
+      try { _diceBox?.clear(); } catch (_) {}
+    }, 2500);
   };
 
   console.log("[DiceManager] DiceBox registered and ready ✓");

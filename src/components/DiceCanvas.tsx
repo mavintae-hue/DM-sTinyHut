@@ -16,7 +16,7 @@ export default function DiceCanvas({ themeColor }: DiceCanvasProps) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (_initialized) return; // Already inited in a previous mount
+    if (_initialized) return;
     _initialized = true;
 
     const timer = setTimeout(async () => {
@@ -24,28 +24,33 @@ export default function DiceCanvas({ themeColor }: DiceCanvasProps) {
       try {
         const box = new DiceBox({
           container: "#dice-container",
-          assetPath: "/dice-assets/",   // Local assets — no CORS issues
+          assetPath: "/dice-assets/",     // Local assets — no CORS
           theme: "default",
           themeColor,
-          scale: 7,
-          spinForce: 10,
-          throwForce: 30,
-          gravity: 2,
-          startingHeight: 12,
+
+          // ── Size & Physics ────────────────────────────────────────────
+          scale: 12,           // BIG dice (was 7)
+          gravity: 1,          // Lower gravity = longer air time
+          startingHeight: 20,  // Drop from high
+          spinForce: 15,       // Fast spin for cool effect
+          throwForce: 8,       // Medium throw so they spread across screen
+          // ─────────────────────────────────────────────────────────────
+
+          offscreen: true,     // Render off-screen for smoother performance
         });
 
         await box.init();
-        registerDiceBox(box); // Hand over to diceManager
+        registerDiceBox(box);
+        console.log("[DiceCanvas] ✓ Ready — scale 12, full-screen physics");
       } catch (e) {
         console.error("[DiceCanvas] Init failed:", e);
-        _initialized = false; // Allow retry on next mount
+        _initialized = false;
       }
     }, 300);
 
     return () => clearTimeout(timer);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Keep theme color in sync
   useEffect(() => {
     setDiceTheme(themeColor);
   }, [themeColor]);
@@ -55,7 +60,13 @@ export default function DiceCanvas({ themeColor }: DiceCanvasProps) {
       id="dice-container"
       ref={containerRef}
       className="fixed inset-0 z-[9999] pointer-events-none"
-      style={{ width: "100vw", height: "100vh", background: "transparent" }}
+      style={{
+        width: "100vw",
+        height: "100vh",
+        background: "transparent",
+        // Ensure no clipping — dice should be visible over EVERYTHING
+        overflow: "visible",
+      }}
     />
   );
 }

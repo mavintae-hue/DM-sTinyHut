@@ -361,25 +361,14 @@ export default function Home() {
       <main className="min-h-screen p-8 bg-cover bg-center bg-no-repeat relative overflow-hidden flex flex-col bg-fixed" style={{ backgroundImage: "url('/bg-fantasy.png')" }}>
         <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"></div>
         
-        <header className="relative z-10 flex justify-between items-center max-w-7xl mx-auto w-full mb-16">
-            <div className="flex items-center gap-4">
-                <div className="bg-white/5 p-3 rounded-2xl border border-white/10">
-                    <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/722.png" alt="Evil DM" className="w-10 h-10" />
-                </div>
-                <div>
-                   <h1 className="text-xl font-black text-white uppercase tracking-tighter">EVIL DM&apos;s Tiny Hut</h1>
-                   <p className="text-[10px] font-bold text-gold uppercase tracking-[0.3em] opacity-50">Archives & Realms</p>
-                </div>
+        <header className="relative z-10 flex flex-col items-center max-w-7xl mx-auto w-full mb-20 mt-10 text-center">
+            <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 mb-6 group hover:scale-105 transition-transform duration-500 shadow-2xl">
+                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/722.png" alt="Evil DM" className="w-24 h-24" />
             </div>
-            <button 
-                onClick={() => {
-                  const name = prompt("Enter Name for New Realm:");
-                  if (name) { setRoomId(name); setTimeout(() => document.getElementById('join-btn')?.click(), 100); }
-                }} 
-                className="bg-white/5 hover:bg-white/10 border border-white/10 px-6 py-3 rounded-2xl text-xs font-black text-white transition-all flex items-center gap-2"
-            >
-                <Plus className="w-4 h-4" /> NEW REALM
-            </button>
+            <div>
+               <h1 className="text-5xl font-black text-white uppercase tracking-tighter mb-2 drop-shadow-2xl">EVIL DM&apos;s Tiny Hut</h1>
+               <p className="text-xs font-bold text-gold uppercase tracking-[0.5em] opacity-40">Digital Archives & Multidimensional Realms</p>
+            </div>
         </header>
 
         <div className="relative z-10 max-w-7xl mx-auto w-full flex-1">
@@ -388,7 +377,12 @@ export default function Home() {
 
                 {/* Stored Realms */}
                 {savedRooms.map(r => (
-                    <div key={r} className="group relative bg-white/5 hover:bg-white/10 border border-white/10 p-8 rounded-[2.5rem] transition-all cursor-pointer overflow-hidden" onClick={() => { setRoomId(r); setTimeout(() => document.getElementById('join-btn')?.click(), 100); }}>
+                    <div key={r} className="group relative bg-white/5 hover:bg-white/10 border border-white/10 p-8 rounded-[2.5rem] transition-all cursor-pointer overflow-hidden" 
+                        onClick={() => { 
+                            setRoomId(r); 
+                            // Direct call since the form button might be gone or hidden
+                            setRoomUuid(r);
+                        }}>
                         <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button 
                                 onClick={(e) => {
@@ -412,6 +406,27 @@ export default function Home() {
                     </div>
                 ))}
             </div>
+        </div>
+
+        {/* Global Join Realm at the Bottom */}
+        <div className="relative z-10 max-w-xl mx-auto w-full mt-20 mb-10">
+            <div className="bg-black/20 backdrop-blur-3xl border border-white/10 p-2 rounded-[2rem] flex items-center gap-2">
+                <input 
+                    required 
+                    type="text" 
+                    className="flex-1 bg-transparent border-none rounded-2xl px-6 py-4 text-white outline-none placeholder:text-white/20" 
+                    value={roomId} 
+                    onChange={e => setRoomId(e.target.value)} 
+                    placeholder="Enter Realm Essence Name..." 
+                />
+                <button 
+                    onClick={handleJoinRoom}
+                    className="bg-gold text-darker font-black px-8 py-4 rounded-[1.5rem] shadow-lg shadow-gold/20 hover:scale-105 active:scale-95 transition-all uppercase text-xs"
+                >
+                    Begin Journey
+                </button>
+            </div>
+            <p className="text-[10px] text-center text-white/20 uppercase tracking-widest mt-4">or select an ancient realm from archives above</p>
         </div>
 
         <footer className="relative z-10 py-8 text-center">

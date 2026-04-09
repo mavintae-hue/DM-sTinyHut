@@ -66,29 +66,9 @@ export default function FloatingWidget({
   const handleMouseUp = () => {
     isDragging.current = false;
     isResizing.current = false;
+    window.removeEventListener("mousemove", handleMouseMove);
+    window.removeEventListener("mouseup", handleMouseUp);
   };
-
-  useEffect(() => {
-    const onMove = (e: MouseEvent) => handleMouseMove(e);
-    const onUp = () => handleMouseUp();
-
-    // We only attach these if we are actually dragging or resizing
-    // But since we use refs, we can attach them once or manage them here.
-    // Optimized: only attach when active.
-    const onMouseDownGlobal = () => {
-      if (isDragging.current || isResizing.current) {
-        window.addEventListener("mousemove", onMove);
-        window.addEventListener("mouseup", onUp);
-      }
-    };
-
-    window.addEventListener("mousedown", onMouseDownGlobal);
-    return () => {
-      window.removeEventListener("mousedown", onMouseDownGlobal);
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
-    };
-  }, []);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     isDragging.current = true;
@@ -96,6 +76,8 @@ export default function FloatingWidget({
       x: e.clientX - position.x,
       y: e.clientY - position.y
     };
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
   };
 
   const handleResizeStart = (e: React.MouseEvent) => {
@@ -103,6 +85,8 @@ export default function FloatingWidget({
     isResizing.current = true;
     startPos.current = { x: e.clientX, y: e.clientY };
     startSize.current = { ...size };
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
   };
 
   return (

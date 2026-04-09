@@ -5,7 +5,8 @@ import StatHexagon from "./StatHexagon";
 import CombatBox from "./CombatBox";
 import SkillRow from "./SkillRow";
 import RollContextMenu from "./RollContextMenu";
-import { Plus, Import, Search, Shield, Zap, Footprints, Heart, Wand2, Sword, Info, Edit3, Camera, Link, Image as ImageIcon, X } from "lucide-react";
+import Portal from "../Portal";
+import { Plus, Import, Search, Shield, Zap, Footprints, Heart, Wand2, Sword, Info, Edit3, Camera, Link, Image as ImageIcon, X, UploadCloud } from "lucide-react";
 import ActionDashboard from "../ActionDashboard";
 
 interface BeyondDashboardProps {
@@ -18,7 +19,7 @@ interface BeyondDashboardProps {
   onDeleteAction: (id: string) => void;
   onImportActions: (character: any) => void;
   onUpdateHp: (current: number) => void;
-  onUpdateAvatar: (url: string) => void;
+  onUpdateAvatar: (input: string | File) => void;
 }
 
 export default function BeyondDashboard({
@@ -216,57 +217,84 @@ export default function BeyondDashboard({
 
       {/* Avatar Edit Modal */}
       {showAvatarModal && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[1000] flex items-center justify-center p-4 animate-in fade-in duration-300">
-            <div className="bg-[#111] border border-white/10 rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden p-8">
-                <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-xl font-black text-white uppercase tracking-tighter">Avatar Chamber</h3>
-                    <button onClick={() => setShowAvatarModal(false)} className="p-2 hover:bg-white/5 rounded-full transition-colors">
-                        <X className="w-5 h-5 text-gray-500" />
-                    </button>
-                </div>
+        <Portal>
+          <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[2000] flex items-center justify-center p-4 animate-in fade-in duration-300">
+              <div className="bg-[#111] border border-white/10 rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden p-8">
+                  <div className="flex justify-between items-center mb-6">
+                      <h3 className="text-xl font-black text-white uppercase tracking-tighter">Avatar Chamber</h3>
+                      <button onClick={() => setShowAvatarModal(false)} className="p-2 hover:bg-white/5 rounded-full transition-colors">
+                          <X className="w-5 h-5 text-gray-500" />
+                      </button>
+                  </div>
 
-                <div className="space-y-6">
-                    <div className="flex justify-center">
-                        <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-gold/20 shadow-2xl">
-                            <img 
-                                src={avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${player.name}`} 
-                                className="w-full h-full object-cover"
-                                alt="Preview"
-                            />
-                        </div>
-                    </div>
+                  <div className="space-y-6">
+                      <div className="flex justify-center">
+                          <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-gold/20 shadow-2xl">
+                              <img 
+                                  src={avatarUrl.startsWith('http') ? avatarUrl : (avatarUrl ? '' : `https://api.dicebear.com/7.x/avataaars/svg?seed=${player.name}`)} 
+                                  className="w-full h-full object-cover"
+                                  alt="Preview"
+                              />
+                              {/* Overlay for local preview would go here if we used URL.createObjectURL */}
+                          </div>
+                      </div>
 
-                    <div className="space-y-4">
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-white/40 uppercase tracking-widest ml-2">Image URL</label>
-                            <div className="relative">
-                                <Link className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gold/50" />
-                                <input 
-                                    type="text" 
-                                    value={avatarUrl}
-                                    onChange={(e) => setAvatarUrl(e.target.value)}
-                                    placeholder="https://..."
-                                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm text-white focus:border-gold outline-none transition-all"
-                                />
-                            </div>
-                        </div>
+                      <div className="space-y-4">
+                          <div className="space-y-2">
+                              <label className="text-[10px] font-black text-white/40 uppercase tracking-widest ml-2">Image Source</label>
+                              <div className="flex flex-col gap-3">
+                                  <div className="relative">
+                                      <Link className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gold/50" />
+                                      <input 
+                                          type="text" 
+                                          value={avatarUrl}
+                                          onChange={(e) => setAvatarUrl(e.target.value)}
+                                          placeholder="Enter Image URL..."
+                                          className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm text-white focus:border-gold outline-none transition-all"
+                                      />
+                                  </div>
+                                  
+                                  <div className="relative">
+                                      <input 
+                                          type="file" 
+                                          id="avatar-upload-local"
+                                          accept="image/*"
+                                          className="hidden"
+                                          onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                                onUpdateAvatar(file);
+                                                setShowAvatarModal(false);
+                                            }
+                                          }}
+                                      />
+                                      <label htmlFor="avatar-upload-local" className="w-full flex items-center justify-center gap-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl py-4 cursor-pointer transition-all border-dashed">
+                                          <UploadCloud className="w-5 h-5 text-gray-400" />
+                                          <span className="text-xs font-bold text-gray-400">UPLOAD FROM COMPUTER</span>
+                                      </label>
+                                  </div>
+                              </div>
+                          </div>
 
-                        <div className="flex flex-col gap-2 pt-4">
-                            <button 
-                                onClick={() => {
-                                    onUpdateAvatar(avatarUrl);
-                                    setShowAvatarModal(false);
-                                }}
-                                className="w-full bg-gold text-darker font-black py-4 rounded-2xl shadow-lg shadow-gold/10 active:scale-95 transition-all"
-                            >
-                                SAVE ESSENCE
-                            </button>
-                            <p className="text-[10px] text-center text-gray-500 uppercase tracking-widest">or use default magic avatar</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+                          <div className="flex flex-col gap-2 pt-4">
+                              <button 
+                                  onClick={() => {
+                                      if (avatarUrl.startsWith('http')) {
+                                          onUpdateAvatar(avatarUrl);
+                                          setShowAvatarModal(false);
+                                      }
+                                  }}
+                                  className="w-full bg-gold text-darker font-black py-4 rounded-2xl shadow-lg shadow-gold/10 active:scale-95 transition-all disabled:opacity-50"
+                                  disabled={!avatarUrl.startsWith('http')}
+                              >
+                                  SAVE URL ESSENCE
+                              </button>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+        </Portal>
       )}
     </div>
   );

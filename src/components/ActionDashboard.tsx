@@ -6,6 +6,7 @@ import ActionRow from "./ActionRow";
 import { RollRequest } from "@/hooks/useSupabaseRealtime";
 import { Plus, X, Import } from "lucide-react";
 
+import Portal from "./Portal";
 const PdfImporter = dynamic(() => import("./PdfImporter"), { ssr: false });
 import { ParsedAction } from "@/lib/pdfParser";
 
@@ -145,84 +146,92 @@ export default function ActionDashboard({
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-card border border-border rounded-lg shadow-2xl w-full max-w-md overflow-hidden">
-            <div className="flex justify-between items-center p-4 border-b border-border bg-dark">
-              <h3 className="font-bold text-gold">
-                {editingAction ? "Edit Custom Action" : "Add Custom Action"}
-              </h3>
-              <button onClick={handleCloseModal} className="text-gray-400 hover:text-white">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <form onSubmit={handleSubmit} className="p-4 space-y-4">
-              <div>
-                <label className="block text-xs text-gray-400 mb-1 uppercase font-semibold">Name</label>
-                <input required type="text" className="w-full bg-dark border border-border rounded p-2 text-sm text-foreground focus:border-gold outline-none" value={newAction.name} onChange={e => setNewAction({...newAction, name: e.target.value})} placeholder="e.g. Vicious Quarterstaff" />
-              </div>
-              <div className="flex gap-4">
-                <div className="flex-1">
-                  <label className="block text-xs text-gray-400 mb-1 uppercase font-semibold">Range</label>
-                  <input required type="text" className="w-full bg-dark border border-border rounded p-2 text-sm text-foreground focus:border-gold outline-none" value={newAction.range} onChange={e => setNewAction({...newAction, range: e.target.value})} placeholder="e.g. 5 ft." />
-                </div>
-                <div className="flex-1">
-                  <label className="block text-xs text-gray-400 mb-1 uppercase font-semibold">Hit Bonus</label>
-                  <input required type="number" className="w-full bg-dark border border-border rounded p-2 text-sm text-foreground focus:border-gold outline-none" value={newAction.hitBonus} onChange={e => setNewAction({...newAction, hitBonus: parseInt(e.target.value)})} placeholder="+5" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label className="block text-xs text-gray-400 uppercase font-semibold">Damage Dice</label>
-                
-                <div className="flex flex-wrap gap-1">
-                  {["d20", "d12", "d10", "d8", "d6", "d4", "d100"].map((dice) => (
-                    <button
-                      key={dice}
-                      type="button"
-                      onClick={() => {
-                        const current = newAction.damageDice.trim();
-                        if (!current) {
-                           setNewAction({...newAction, damageDice: `1${dice}`});
-                        } else if (current.endsWith("+") || current.endsWith("-")) {
-                           setNewAction({...newAction, damageDice: `${current} 1${dice}`});
-                        } else {
-                           setNewAction({...newAction, damageDice: `${current} + 1${dice}`});
-                        }
-                      }}
-                      className="px-2 py-1 bg-darker border border-border text-gray-400 rounded hover:border-gold hover:text-gold transition-colors text-xs font-mono"
-                    >
-                      {dice}
-                    </button>
-                  ))}
-                  <button type="button" className="px-2 py-1 bg-darker border border-border text-gray-400 rounded hover:border-gold hover:text-gold transition-colors text-xs font-mono" onClick={() => setNewAction({...newAction, damageDice: newAction.damageDice + " + "})}>+</button>
-                  <button type="button" className="px-2 py-1 bg-dark border border-red-900 text-red-500 rounded hover:bg-red-900 transition-colors text-xs font-mono" onClick={() => setNewAction({...newAction, damageDice: ""})}>Clear</button>
-                </div>
-                
-                <input required type="text" className="w-full bg-dark border border-border rounded p-2 text-sm text-foreground focus:border-gold outline-none" value={newAction.damageDice} onChange={e => setNewAction({...newAction, damageDice: e.target.value})} placeholder="e.g. 1d6+3" />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-400 mb-1 uppercase font-semibold">Notes</label>
-                <input type="text" className="w-full bg-dark border border-border rounded p-2 text-sm text-foreground focus:border-gold outline-none" value={newAction.notes} onChange={e => setNewAction({...newAction, notes: e.target.value})} placeholder="e.g. Simple, Versatile" />
-              </div>
-              
-              <div className="pt-4 flex justify-end gap-2">
-                <button type="button" onClick={handleCloseModal} className="px-4 py-2 rounded text-sm font-semibold text-gray-400 hover:text-white hover:bg-dark">Cancel</button>
-                <button type="submit" className="px-4 py-2 rounded text-sm font-semibold bg-gold text-darker hover:bg-gold-hover">
-                  {editingAction ? "Save Changes" : "Add Action"}
+        <Portal>
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[2000] flex items-center justify-center p-4">
+            <div className="bg-card border border-border rounded-lg shadow-2xl w-full max-w-md overflow-hidden">
+              <div className="flex justify-between items-center p-4 border-b border-border bg-dark">
+                <h3 className="font-bold text-gold">
+                  {editingAction ? "Edit Custom Action" : "Add Custom Action"}
+                </h3>
+                <button onClick={handleCloseModal} className="text-gray-400 hover:text-white">
+                  <X className="w-5 h-5" />
                 </button>
               </div>
-            </form>
+              <form onSubmit={handleSubmit} className="p-4 space-y-4">
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1 uppercase font-semibold">Name</label>
+                  <input required type="text" className="w-full bg-dark border border-border rounded p-2 text-sm text-foreground focus:border-gold outline-none" value={newAction.name} onChange={e => setNewAction({...newAction, name: e.target.value})} placeholder="e.g. Vicious Quarterstaff" />
+                </div>
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <label className="block text-xs text-gray-400 mb-1 uppercase font-semibold">Range</label>
+                    <input required type="text" className="w-full bg-dark border border-border rounded p-2 text-sm text-foreground focus:border-gold outline-none" value={newAction.range} onChange={e => setNewAction({...newAction, range: e.target.value})} placeholder="e.g. 5 ft." />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-xs text-gray-400 mb-1 uppercase font-semibold">Hit Bonus</label>
+                    <input required type="number" className="w-full bg-dark border border-border rounded p-2 text-sm text-foreground focus:border-gold outline-none" value={newAction.hitBonus} onChange={e => setNewAction({...newAction, hitBonus: parseInt(e.target.value)})} placeholder="+5" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-xs text-gray-400 uppercase font-semibold">Damage Dice</label>
+                  
+                  <div className="flex flex-wrap gap-1">
+                    {["d20", "d12", "d10", "d8", "d6", "d4", "d100"].map((dice) => (
+                      <button
+                        key={dice}
+                        type="button"
+                        onClick={() => {
+                          const current = newAction.damageDice.trim();
+                          if (!current) {
+                             setNewAction({...newAction, damageDice: `1${dice}`});
+                          } else if (current.endsWith("+") || current.endsWith("-")) {
+                             setNewAction({...newAction, damageDice: `${current} 1${dice}`});
+                          } else {
+                             setNewAction({...newAction, damageDice: `${current} + 1${dice}`});
+                          }
+                        }}
+                        className="px-2 py-1 bg-darker border border-border text-gray-400 rounded hover:border-gold hover:text-gold transition-colors text-xs font-mono"
+                      >
+                        {dice}
+                      </button>
+                    ))}
+                    <button type="button" className="px-2 py-1 bg-darker border border-border text-gray-400 rounded hover:border-gold hover:text-gold transition-colors text-xs font-mono" onClick={() => setNewAction({...newAction, damageDice: newAction.damageDice + " + "})}>+</button>
+                    <button type="button" className="px-2 py-1 bg-dark border border-red-900 text-red-500 rounded hover:bg-red-900 transition-colors text-xs font-mono" onClick={() => setNewAction({...newAction, damageDice: ""})}>Clear</button>
+                  </div>
+                  
+                  <input required type="text" className="w-full bg-dark border border-border rounded p-2 text-sm text-foreground focus:border-gold outline-none" value={newAction.damageDice} onChange={e => setNewAction({...newAction, damageDice: e.target.value})} placeholder="e.g. 1d6+3" />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1 uppercase font-semibold">Notes</label>
+                  <input type="text" className="w-full bg-dark border border-border rounded p-2 text-sm text-foreground focus:border-gold outline-none" value={newAction.notes} onChange={e => setNewAction({...newAction, notes: e.target.value})} placeholder="e.g. Simple, Versatile" />
+                </div>
+                
+                <div className="pt-4 flex justify-end gap-2">
+                  <button type="button" onClick={handleCloseModal} className="px-4 py-2 rounded text-sm font-semibold text-gray-400 hover:text-white hover:bg-dark">Cancel</button>
+                  <button type="submit" className="px-4 py-2 rounded text-sm font-semibold bg-gold text-darker hover:bg-gold-hover">
+                    {editingAction ? "Save Changes" : "Add Action"}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
+        </Portal>
       )}
 
       {isPdfModalOpen && (
-        <PdfImporter 
-          onClose={() => setIsPdfModalOpen(false)} 
-          onImport={(character) => {
-            onImportActions(character); // Send the WHOLE character object
-            setIsPdfModalOpen(false);
-          }}
-        />
+        <Portal>
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[2000] flex items-center justify-center p-4">
+            <div className="bg-[#111] border border-white/10 rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
+              <PdfImporter 
+                onClose={() => setIsPdfModalOpen(false)} 
+                onImport={(character) => {
+                  onImportActions(character); // Send the WHOLE character object
+                  setIsPdfModalOpen(false);
+                }}
+              />
+            </div>
+          </div>
+        </Portal>
       )}
     </div>
   );

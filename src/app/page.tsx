@@ -7,7 +7,7 @@ import DiceCanvas from "@/components/DiceCanvas";
 import QuickRoller from "@/components/QuickRoller";
 import BeyondDashboard from "@/components/character-sheet/BeyondDashboard";
 import { useSupabaseRealtime, RollRequest, RollResult } from "@/hooks/useSupabaseRealtime";
-import { Dices, LogIn, Users, Settings2, X, Trash2, Palette, UserPlus, UploadCloud, ChevronLeft, Paintbrush, Check, Globe, Sparkles } from "lucide-react";
+import { Dices, LogIn, Users, Settings2, X, Trash2, Palette, UserPlus, UploadCloud, ChevronLeft, Paintbrush, Check, Globe, Sparkles, Plus } from "lucide-react";
 
 export const DICE_COLORS = [
   { name: "Void Black", hex: "#1a1a1a" },
@@ -234,11 +234,27 @@ export default function Home() {
     await supabase.from("players").update({ hp_current: current }).eq("room_id", roomUuid).eq("name", playerName);
   };
 
-  const handleUpdateAvatar = async (url: string) => {
+  const handleUpdateAvatar = async (input: string | File) => {
     if (!roomUuid) return;
-    setPlayerAvatar(url);
-    setPlayerData({ ...playerData, avatar_url: url });
-    await supabase.from("players").update({ avatar_url: url }).eq("room_id", roomUuid).eq("name", playerName);
+    let finalUrl = "";
+
+    if (typeof input === "string") {
+      finalUrl = input;
+    } else {
+      setIsUploading(true);
+      const fileExt = input.name.split('.').pop();
+      const fileName = `${roomUuid}-avatar-${Date.now()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage.from("avatars").upload(fileName, input);
+      if (!uploadError) {
+        finalUrl = supabase.storage.from("avatars").getPublicUrl(fileName).data.publicUrl;
+      }
+      setIsUploading(false);
+    }
+
+    if (!finalUrl) return;
+    setPlayerAvatar(finalUrl);
+    setPlayerData({ ...playerData, avatar_url: finalUrl });
+    await supabase.from("players").update({ avatar_url: finalUrl }).eq("room_id", roomUuid).eq("name", playerName);
   };
 
   const handleUpdateAction = async (updatedAction: any) => {
@@ -342,43 +358,81 @@ export default function Home() {
 
   if (!roomUuid) {
     return (
-      <main className="min-h-screen flex items-center justify-center p-4 bg-cover bg-center bg-no-repeat relative overflow-hidden" style={{ backgroundImage: "url('/bg-fantasy.png')" }}>
-        <div className="absolute inset-0 bg-black/40 backdrop-brightness-[0.7]"></div>
-        <div className="relative z-10 bg-black/40 backdrop-blur-2xl border border-white/10 p-10 rounded-[3rem] shadow-2xl w-full max-w-md">
-          <div className="flex justify-center mb-10">
-            <div className="bg-white/10 p-5 rounded-[2.5rem] border border-white/20 shadow-2xl">
-              <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/722.png" alt="Evil DM" className="w-24 h-24" />
+      <main className="min-h-screen p-8 bg-cover bg-center bg-no-repeat relative overflow-hidden flex flex-col" style={{ backgroundImage: "url('/bg-fantasy.png')" }}>
+        <div className="absolute inset-0 bg-[#050505]/80 backdrop-blur-xl"></div>
+        
+        <header className="relative z-10 flex justify-between items-center max-w-7xl mx-auto w-full mb-16">
+            <div className="flex items-center gap-4">
+                <div className="bg-white/5 p-3 rounded-2xl border border-white/10">
+                    <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/722.png" alt="Evil DM" className="w-10 h-10" />
+                </div>
+                <div>
+                   <h1 className="text-xl font-black text-white uppercase tracking-tighter">End of Hexanriel</h1>
+                   <p className="text-[10px] font-bold text-gold uppercase tracking-[0.3em] opacity-50">Archives & Realms</p>
+                </div>
             </div>
-          </div>
-          <form onSubmit={handleJoinRoom} className="space-y-6">
-            <div className="space-y-4">
-              <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.3em] ml-3">Secret Realm ID</label>
-              <input required type="text" className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-lg text-white" value={roomId} onChange={e => setRoomId(e.target.value)} placeholder="Realm Name..." />
-              <button type="submit" className="w-full bg-gradient-to-br from-yellow-700 to-yellow-400 text-darker font-black py-5 rounded-2xl">BEGIN JOURNEY</button>
+            <button 
+                onClick={() => {
+                  const name = prompt("Enter Name for New Realm:");
+                  if (name) { setRoomId(name); setTimeout(() => document.getElementById('join-btn')?.click(), 100); }
+                }} 
+                className="bg-white/5 hover:bg-white/10 border border-white/10 px-6 py-3 rounded-2xl text-xs font-black text-white transition-all flex items-center gap-2"
+            >
+                <Plus className="w-4 h-4" /> NEW REALM
+            </button>
+        </header>
+
+        <div className="relative z-10 max-w-7xl mx-auto w-full flex-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {/* Active Form if no rooms yet or user wants to add */}
+                <div className="bg-white/5 backdrop-blur-3xl border border-white/10 p-8 rounded-[2.5rem] flex flex-col justify-center">
+                    <h3 className="text-sm font-black text-white/40 uppercase tracking-widest mb-6">Summon Realm</h3>
+                    <form onSubmit={handleJoinRoom} className="space-y-4">
+                        <input 
+                            required 
+                            type="text" 
+                            className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-white outline-none focus:border-gold transition-all" 
+                            value={roomId} 
+                            onChange={e => setRoomId(e.target.value)} 
+                            placeholder="Realm Name..." 
+                        />
+                        <button id="join-btn" type="submit" className="w-full bg-gold text-darker font-black py-5 rounded-2xl shadow-lg shadow-gold/10 transform active:scale-95 transition-all">
+                            BEGIN JOURNEY
+                        </button>
+                    </form>
+                </div>
+
+                {/* Stored Realms */}
+                {savedRooms.map(r => (
+                    <div key={r} className="group relative bg-white/5 hover:bg-white/10 border border-white/10 p-8 rounded-[2.5rem] transition-all cursor-pointer overflow-hidden" onClick={() => { setRoomId(r); setTimeout(() => document.getElementById('join-btn')?.click(), 100); }}>
+                        <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if(confirm(`Erase realm ${r}?`)) { supabase.from("rooms").delete().eq("name", r).then(() => fetchMetadata()); }
+                                }}
+                                className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-xl transition-all"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                            </button>
+                        </div>
+                        <div className="w-16 h-16 bg-white/5 rounded-2xl border border-white/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                            <Globe className="w-8 h-8 text-gold/40" />
+                        </div>
+                        <h4 className="text-2xl font-black text-white uppercase tracking-tighter mb-1">{r}</h4>
+                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Ancient Kingdom</p>
+                        
+                        <div className="mt-8 flex items-center gap-2 text-gold font-black text-[10px] uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
+                            ENTER REALM <Sparkles className="w-3 h-3" />
+                        </div>
+                    </div>
+                ))}
             </div>
-          </form>
-          <div className="mt-8 text-center">
-             <button onClick={() => setShowManager(true)} className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 mx-auto"><Settings2 className="w-4 h-4" /> ARCHIVES</button>
-          </div>
         </div>
-        {showManager && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-            <div className="bg-[#111] border border-white/10 p-6 rounded-2xl w-full max-w-lg">
-               <div className="flex justify-between items-center mb-6">
-                 <h2 className="text-xl font-bold text-white">Stored Realms</h2>
-                 <button onClick={() => setShowManager(false)}><X className="text-gray-500"/></button>
-               </div>
-               <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
-                 {savedRooms.map(r => (
-                   <div key={r} className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5">
-                     <span className="text-gold font-mono">{r}</span>
-                     <button onClick={async () => { await supabase.from("rooms").delete().eq("name", r); fetchMetadata(); }} className="text-gray-500 hover:text-red-500"><Trash2 className="w-4 h-4"/></button>
-                   </div>
-                 ))}
-               </div>
-            </div>
-          </div>
-        )}
+
+        <footer className="relative z-10 py-8 text-center">
+            <p className="text-[10px] font-bold text-gray-600 uppercase tracking-[0.4em]">Evil DM Tinyhut © 2026 • Crafted for Hexanriel</p>
+        </footer>
       </main>
     );
   }

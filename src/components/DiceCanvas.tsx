@@ -40,7 +40,7 @@ export default function DiceCanvas({ themeColor }: DiceCanvasProps) {
         console.error("[DiceCanvas] Init failed:", e);
         _initialized = false; // Allow retry on next mount
       }
-    }, 600);
+    }, 300);
 
     return () => clearTimeout(timer);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps

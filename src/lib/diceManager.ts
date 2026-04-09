@@ -20,7 +20,6 @@ export function registerDiceBox(box: any) {
     if (!item) return;
 
     const { req, getPlayerName, onComplete } = item;
-    if (req.playerName !== getPlayerName()) return; // wrong player
 
     let totalFromDice = 0;
     const rolls: number[] = [];
@@ -57,7 +56,7 @@ export function registerDiceBox(box: any) {
     });
   };
 
-  console.log("[DiceManager] DiceBox registered and ready.");
+  console.log("[DiceManager] DiceBox registered and ready ✓");
 }
 
 /** Update dice theme color */
@@ -67,46 +66,87 @@ export function setDiceTheme(color: string) {
   }
 }
 
-/** Directly roll dice — no React state required */
+/** ─── Fallback: instant JS roll (no 3D animation) ─────────────────────────── */
+function instantRoll(
+  req: RollRequest,
+  onComplete: RollCompleteCallback
+) {
+  // Parse dice count and faces from formula (e.g. "2d20", "1d6")
+  const notation = (req.rollType === "hit_adv" || req.rollType === "hit_disadv")
+    ? "2d20"
+    : req.formula;
+
+  const match = notation.match(/^(\d*)d(\d+)/i);
+  const count = parseInt(match?.[1] || "1") || 1;
+  const faces = parseInt(match?.[2] || "20") || 20;
+
+  const rolls = Array.from({ length: count }, () => Math.ceil(Math.random() * faces));
+  let chosenDie = rolls[0] || 0;
+  let finalTotal = rolls.reduce((a, b) => a + b, 0) + req.modifier;
+
+  if (req.rollType === "hit_adv" && rolls.length === 2) {
+    chosenDie = Math.max(...rolls);
+    finalTotal = chosenDie + req.modifier;
+  } else if (req.rollType === "hit_disadv" && rolls.length === 2) {
+    chosenDie = Math.min(...rolls);
+    finalTotal = chosenDie + req.modifier;
+  } else {
+    chosenDie = rolls[0] || 0;
+  }
+
+  const isNat20 = req.rollType.startsWith("hit_") && chosenDie === 20;
+  const isNat1  = req.rollType.startsWith("hit_") && chosenDie === 1;
+
+  console.log("[DiceManager] Instant fallback roll:", rolls, "total:", finalTotal);
+
+  onComplete({
+    playerName: req.playerName,
+    actionName: req.actionName,
+    rollType: req.rollType,
+    resultTotal: finalTotal,
+    resultDetails: { rolls, modifier: req.modifier, formula: req.formula, isNat20, isNat1 },
+  });
+}
+
+/** ─── Main roll entry point ──────────────────────────────────────────────── */
 export function rollDice(
   req: RollRequest,
   getPlayerName: () => string,
   onComplete: RollCompleteCallback
 ) {
-  if (!_diceBox) {
-    console.warn("[DiceManager] DiceBox not ready yet. Ignoring roll.");
-    return;
+  // ── Try 3D DiceBox first ──────────────────────────────────────────────────
+  if (_diceBox) {
+    if (req.themeColor) {
+      try { _diceBox.updateConfig({ themeColor: req.themeColor }); } catch (_) {}
+    }
+
+    let notation = req.formula;
+    if (req.rollType === "hit_adv" || req.rollType === "hit_disadv") {
+      notation = "2d20";
+    }
+
+    const diceArray = notation
+      .split("+")
+      .map((s) => s.trim())
+      .filter((s) => /\d*d\d+/i.test(s));
+
+    if (diceArray.length > 0) {
+      console.log("[DiceManager] 3D rolling:", diceArray, "for", req.actionName);
+      _queue.push({ req, getPlayerName, onComplete });
+
+      try {
+        _diceBox.show();
+        _diceBox.roll(diceArray);
+        return; // Success — onRollComplete will call onComplete
+      } catch (err) {
+        console.error("[DiceManager] DiceBox.roll() error:", err);
+        _queue.pop(); // Remove from queue — fall through to instant roll
+      }
+    }
+  } else {
+    console.warn("[DiceManager] DiceBox not ready, using instant fallback");
   }
 
-  if (req.themeColor) {
-    try { _diceBox.updateConfig({ themeColor: req.themeColor }); } catch (_) {}
-  }
-
-  // Determine dice notation
-  let notation = req.formula;
-  if (req.rollType === "hit_adv" || req.rollType === "hit_disadv") {
-    notation = "2d20";
-  }
-
-  // Extract only dice parts (e.g. "1d20" from "1d20+5")
-  const diceArray = notation
-    .split("+")
-    .map((s) => s.trim())
-    .filter((s) => /\d*d\d+/i.test(s));
-
-  if (diceArray.length === 0) {
-    console.warn("[DiceManager] No valid dice notation in:", notation);
-    return;
-  }
-
-  console.log("[DiceManager] Rolling", diceArray, "for", req.actionName);
-  _queue.push({ req, getPlayerName, onComplete });
-
-  try {
-    _diceBox.show();
-    _diceBox.roll(diceArray);
-  } catch (err) {
-    console.error("[DiceManager] roll() failed:", err);
-    _queue.pop();
-  }
+  // ── Fallback: instant JS roll ─────────────────────────────────────────────
+  instantRoll(req, onComplete);
 }

@@ -186,6 +186,7 @@ export default function Home() {
         ability_scores: parsedCharacter.abilityScores,
         skills: parsedCharacter.skills,
         saves: parsedCharacter.saves,
+        senses: parsedCharacter.senses,
         class_level: parsedCharacter.classLevel
       })
       .eq("room_id", roomUuid)

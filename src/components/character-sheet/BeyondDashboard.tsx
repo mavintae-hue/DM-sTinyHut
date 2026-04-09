@@ -145,17 +145,44 @@ export default function BeyondDashboard({
 
         {/* Middle Column: Skills & Senses */}
         <div className="lg:col-span-4 space-y-6">
-          <div className="bg-[#151515]/60 border border-white/5 rounded-[2rem] p-6 shadow-xl h-full">
-             <div className="flex justify-between items-center mb-4 ml-2">
+          <div className="bg-[#151515]/60 border border-white/5 rounded-[2rem] p-6 shadow-xl max-h-[600px] overflow-hidden flex flex-col">
+             <div className="flex justify-between items-center mb-4 ml-2 flex-shrink-0">
                 <h3 className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Skills</h3>
                 <span className="text-[10px] font-bold text-cyan-400 bg-cyan-400/10 px-2 py-0.5 rounded">PB: +{player.proficiency_bonus}</span>
              </div>
-             <div className="space-y-1 max-h-[700px] overflow-y-auto custom-scrollbar pr-2">
+             <div className="space-y-1 overflow-y-auto custom-scrollbar pr-2 flex-1">
                 {(player.skills || []).map((skill: any, i: number) => (
                     <SkillRow key={i} name={skill.name} modifier={skill.modifier} isProficient={skill.isProficient} type="skill" onRoll={onRoll} />
                 ))}
              </div>
           </div>
+          
+          {/* Senses Panel */}
+          {player.senses && Object.keys(player.senses).length > 0 && (
+             <div className="bg-[#151515]/60 border border-white/5 rounded-[2rem] p-6 shadow-xl">
+                 <h3 className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] mb-4 ml-2 flex items-center gap-2">
+                    <Search className="w-3 h-3" /> Senses
+                 </h3>
+                 <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-black/30 border border-white/5 p-3 rounded-2xl flex flex-col items-center justify-center">
+                       <span className="text-xl font-black text-white">{player.senses.passive_perception || 10}</span>
+                       <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest mt-1">Perception</span>
+                    </div>
+                    <div className="bg-black/30 border border-white/5 p-3 rounded-2xl flex flex-col items-center justify-center">
+                       <span className="text-xl font-black text-white">{player.senses.passive_investigation || 10}</span>
+                       <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest mt-1">Investigation</span>
+                    </div>
+                    <div className="bg-black/30 border border-white/5 p-3 rounded-2xl flex flex-col items-center justify-center">
+                       <span className="text-xl font-black text-white">{player.senses.passive_insight || 10}</span>
+                       <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest mt-1">Insight</span>
+                    </div>
+                    <div className="bg-black/30 border border-white/5 p-3 rounded-2xl flex flex-col items-center flex-1 justify-center text-center">
+                       <span className="text-xs font-bold text-cyan-400 break-words">{player.senses.darkvision || 'Normal'}</span>
+                       <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest mt-1">Vision</span>
+                    </div>
+                 </div>
+             </div>
+          )}
         </div>
 
         {/* Right Column: Actions Dashboard */}

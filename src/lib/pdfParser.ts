@@ -32,6 +32,7 @@ export interface ParsedCharacter {
   skills: ParsedSkill[];
   saves: ParsedSkill[];
   actions: ParsedAction[];
+  senses: any;
 }
 
 export async function parseDnDBeyondPdf(file: File): Promise<ParsedCharacter> {
@@ -59,7 +60,8 @@ export async function parseDnDBeyondPdf(file: File): Promise<ParsedCharacter> {
     abilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
     skills: [],
     saves: [],
-    actions: []
+    actions: [],
+    senses: {}
   };
 
   // Helper to find annotation by name regex or exact string
@@ -142,6 +144,14 @@ export async function parseDnDBeyondPdf(file: File): Promise<ParsedCharacter> {
           });
       }
   });
+
+  // --- Extract Senses ---
+  result.senses = {
+      passive_perception: parseInt(getAnn("Passive1")) || 10,
+      passive_investigation: parseInt(getAnn("Passive2")) || 10,
+      passive_insight: parseInt(getAnn("Passive3")) || 10,
+      darkvision: getAnn("AdditionalSenses") || ""
+  };
 
   return result;
 }

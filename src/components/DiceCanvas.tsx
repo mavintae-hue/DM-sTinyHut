@@ -9,21 +9,26 @@ interface DiceCanvasProps {
   diceTheme: string;
 }
 
-let _initialized = false;
-
 export default function DiceCanvas({ themeColor, diceTheme }: DiceCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const initializingRef = useRef(false);
+  const initializedRef = useRef(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (_initialized) return;
-    _initialized = true;
-
+    if (initializedRef.current || initializingRef.current) return;
+    
+    initializingRef.current = true;
     let box: any = null;
 
     const initDice = async () => {
       const container = containerRef.current;
-      if (!container) return;
+      if (!container) {
+        initializingRef.current = false;
+        return;
+      }
+
+      console.log("[DiceCanvas] Starting initialization...");
 
       // Force container to fill viewport exactly
       const updateSize = () => {
@@ -62,6 +67,8 @@ export default function DiceCanvas({ themeColor, diceTheme }: DiceCanvasProps) {
         }
 
         registerDiceBox(box);
+        initializedRef.current = true;
+        initializingRef.current = false;
         console.log(`[DiceCanvas] ✓ Initialized ${W}x${H}`);
 
         // Listen for resizes to keep the visual canvas correct
@@ -69,7 +76,7 @@ export default function DiceCanvas({ themeColor, diceTheme }: DiceCanvasProps) {
 
       } catch (e) {
         console.error("[DiceCanvas] Init failed:", e);
-        _initialized = false;
+        initializingRef.current = false;
       }
     };
 
@@ -80,9 +87,6 @@ export default function DiceCanvas({ themeColor, diceTheme }: DiceCanvasProps) {
 
     return () => {
         cancelAnimationFrame(handle);
-        // We don't remove the resize listener here because _initialized is global
-        // and we want to keep the box alive. In a real app we'd handle cleanup better
-        // but for this singleton pattern we persist.
     };
   }, []);
 

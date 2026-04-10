@@ -40,20 +40,27 @@ export function useSupabaseRealtime(
 ) {
   const channelRef = useRef<RealtimeChannel | null>(null);
   const roomIdRef = useRef<string>(roomId);
+  const playerNameRef = useRef<string>(playerName);
+  const playerAvatarRef = useRef<string | null>(playerAvatar);
   const [logs, setLogs] = useState<RollResult[]>([]);
   const [activePlayers, setActivePlayers] = useState<ActivePlayer[]>([]);
   const onRollReceivedRef = useRef(onRollReceived);
 
-  // Keep refs updated when values change
-  useEffect(() => {
-    roomIdRef.current = roomId;
-  }, [roomId]);
+  // Keep refs updated when values change (no subscription rebuild!)
+  useEffect(() => { roomIdRef.current = roomId; }, [roomId]);
+  useEffect(() => { playerNameRef.current = playerName; }, [playerName]);
+  useEffect(() => { playerAvatarRef.current = playerAvatar; }, [playerAvatar]);
+  useEffect(() => { onRollReceivedRef.current = onRollReceived; }, [onRollReceived]);
 
-  // Update ref when callback changes
+  // Update presence when playerName or avatar changes, WITHOUT rebuilding channel
   useEffect(() => {
-    onRollReceivedRef.current = onRollReceived;
-  }, [onRollReceived]);
+    const ch = channelRef.current;
+    if (!ch || !playerName) return;
+    ch.track({ online_at: new Date().toISOString(), avatar_url: playerAvatar })
+      .catch(err => console.warn("[Realtime] Presence update failed:", err));
+  }, [playerName, playerAvatar]);
 
+  // Channel subscription — only rebuild when roomId changes
   useEffect(() => {
     if (!roomId) return;
 
@@ -83,15 +90,15 @@ export function useSupabaseRealtime(
 
     const roomChannel = supabase.channel(`room:${roomId}`, {
       config: {
-        broadcast: { self: false }, // Don't broadcast to self to avoid echo
-        presence: { key: playerName },
+        broadcast: { self: false },
+        presence: { key: playerNameRef.current || "anonymous" },
       },
     });
 
     roomChannel
       .on("broadcast", { event: "roll_request" }, (payload) => {
         const req = payload.payload as RollRequest;
-        if (req && req.playerName !== playerName) {
+        if (req && req.playerName !== playerNameRef.current) {
             onRollReceivedRef.current?.(req);
         }
       })
@@ -120,6 +127,7 @@ export function useSupabaseRealtime(
           filter: `room_id=eq.${roomId}`,
         },
         (payload) => {
+          console.log("[Realtime] DB Change Received:", payload.new);
           const newDoc = payload.new;
           const newLog: RollResult = {
             playerName: newDoc.player_name,
@@ -132,10 +140,17 @@ export function useSupabaseRealtime(
           setLogs((prevLogs) => [newLog, ...prevLogs]);
         }
       )
-      .subscribe(async (status) => {
+      .subscribe(async (status, err) => {
         if (status === "SUBSCRIBED") {
-          console.log("[Presence] Connected as:", playerName);
-          await roomChannel.track({ online_at: new Date().toISOString(), avatar_url: playerAvatar });
+          console.log("[Realtime] ✓ Subscribed to room:", roomId);
+          // Track presence on successful subscription
+          const name = playerNameRef.current;
+          const avatar = playerAvatarRef.current;
+          if (name) {
+            await roomChannel.track({ online_at: new Date().toISOString(), avatar_url: avatar });
+          }
+        } else if (status !== "CLOSED") {
+          console.warn(`[Realtime] Subscription status: ${status}`, err || "");
         }
       });
 
@@ -145,7 +160,7 @@ export function useSupabaseRealtime(
       channelRef.current = null;
       supabase.removeChannel(roomChannel);
     };
-  }, [roomId, playerName, playerAvatar]);
+  }, [roomId]); // ONLY roomId — player name/avatar changes don't rebuild
 
   const sendRollRequest = async (request: RollRequest) => {
     const ch = channelRef.current;
@@ -168,7 +183,7 @@ export function useSupabaseRealtime(
       return;
     }
 
-    console.log("[Realtime] Saving roll result for room:", currentRoomId, "| action:", result.actionName);
+    console.log("[Realtime] Saving roll for room:", currentRoomId, "| action:", result.actionName);
 
     const { error } = await supabase.from("rolls_history").insert({
       room_id: currentRoomId,
@@ -184,5 +199,5 @@ export function useSupabaseRealtime(
     }
   };
 
-  return { logs, sendRollRequest, saveRollResult, channel: channelRef.current, activePlayers };
+  return { logs, sendRollRequest, saveRollResult, activePlayers };
 }

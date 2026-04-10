@@ -304,21 +304,21 @@ export default function Home() {
   };
 
   const handleRoll = (label: string, mod: number, type: 'normal' | 'adv' | 'dis', isDamage = false, formulaUrl?: string) => {
-    let formula = formulaUrl || `1d20${mod !== 0 ? (mod > 0 ? '+' : '') + mod : ''}`;
+    // Use simple notation — diceManager handles adv/disadv via rollType, not formula notation
+    let formula = formulaUrl || `1d20`;
     let rollType: RollRequest['rollType'] = 'custom';
 
     if (!isDamage) {
       if (type === 'adv') {
-        formula = `2d20kh1${mod >= 0 ? '+' : ''}${mod}`;
         rollType = 'hit_adv';
       } else if (type === 'dis') {
-        formula = `2d20kl1${mod >= 0 ? '+' : ''}${mod}`;
         rollType = 'hit_disadv';
       } else {
         rollType = 'hit_normal';
       }
     } else {
       rollType = type === 'adv' ? 'damage_crit' : 'damage_normal';
+      formula = formulaUrl || '1d6'; // damage rolls use the actual formula passed in
     }
 
     let finalLabel = label;
@@ -335,14 +335,14 @@ export default function Home() {
       diceTheme: diceTheme || 'default',
     };
 
-    // Call diceManager directly — no React state, no broadcast timing issues
+    // Roll locally with 3D dice
     rollDice(
       request,
       () => playerName,
       (res) => saveRollResult({ ...res, resultDetails: { ...res.resultDetails, player_avatar: playerAvatar } })
     );
 
-    // Broadcast for multiplayer (other players see the request)
+    // Broadcast so other players in the realm see the dice roll too
     sendRollRequest(request);
   };
 

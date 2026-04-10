@@ -148,30 +148,31 @@ export function rollDice(
 ) {
   if (_diceBox) {
     const style = req.themeColor || "#9b111e";
-    const theme = overrideTheme || _currentTheme;
+    const theme = overrideTheme || req.diceTheme || _currentTheme;
     
+    // Always convert adv/disadv to clean "2d20" — ignore any formula modifier notation
     let notation = req.formula;
     if (req.rollType === "hit_adv" || req.rollType === "hit_disadv") {
       notation = "2d20";
     }
 
-    // Improved parsing: keep signs like +5 or -2 but focus on dice groups
-    const groups = notation.split("+").map(s => s.trim()).filter(s => /\d*d\d+/i.test(s));
+    // Extract dice groups from formula — handle negative modifiers by splitting on + and -
+    // Strip any keep-notation (kh1, kl1) and similar modifiers first
+    const cleanNotation = notation.replace(/k[hl]\d+/gi, "");
+    const groups = cleanNotation.split(/(?=[+-])/).map(s => s.trim()).filter(s => /\d*d\d+/i.test(s));
 
     if (groups.length > 0) {
-      // Create a unique ID for this roll to track its metadata
       const rollId = `roll_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
       _pendingRolls.set(rollId, { req, getPlayerName, onComplete });
 
       try {
         _diceBox.show();
-        // Set the global theme for the canvas before rolling these specific dice
         _diceBox.updateConfig({ theme }); 
 
         const rollArray: any[] = [];
         groups.forEach(g => {
-            const match = g.match(/^(\d*)d(\d+)/i);
-            const count = parseInt(match?.[1] || "1") || 1;
+            const match = g.match(/^[+-]?(\d*)d(\d+)/i);
+            const count = Math.abs(parseInt(match?.[1] || "1")) || 1;
             const faces = parseInt(match?.[2] || "20") || 20;
 
             for (let i = 0; i < count; i++) {
@@ -185,20 +186,27 @@ export function rollDice(
                     sides: faces,
                     themeColor: color,
                     theme,
-                    groupId: rollId, // Passing both to be safe
-                    id: rollId      // Older versions use 'id'
+                    groupId: rollId,
+                    id: rollId
                 });
             }
         });
 
+        console.log("[DiceManager] Rolling:", rollArray.length, "dice for:", req.actionName);
         _diceBox.roll(rollArray);
         return;
       } catch (err) {
         console.error("[DiceManager] DiceBox.roll() error:", err);
         _pendingRolls.delete(rollId);
+        // Fall through to instantRoll
       }
+    } else {
+      console.warn("[DiceManager] No dice groups parsed from formula:", req.formula, "→ using instant roll");
     }
+  } else {
+    console.log("[DiceManager] DiceBox not ready, using instant roll for:", req.actionName);
   }
 
+  // Always fallback to instant JS roll if 3D dice isn't ready or fails
   instantRoll(req, onComplete);
 }

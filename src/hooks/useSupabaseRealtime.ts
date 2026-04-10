@@ -38,7 +38,7 @@ export function useSupabaseRealtime(
   playerAvatar: string | null,
   onRollReceived?: (req: RollRequest) => void
 ) {
-  const [channel, setChannel] = useState<RealtimeChannel | null>(null);
+  const channelRef = useRef<RealtimeChannel | null>(null);
   const [logs, setLogs] = useState<RollResult[]>([]);
   const [activePlayers, setActivePlayers] = useState<ActivePlayer[]>([]);
   const onRollReceivedRef = useRef(onRollReceived);
@@ -133,17 +133,22 @@ export function useSupabaseRealtime(
         }
       });
 
-    setChannel(roomChannel);
+    channelRef.current = roomChannel;
 
     return () => {
+      channelRef.current = null;
       supabase.removeChannel(roomChannel);
     };
   }, [roomId, playerName, playerAvatar]);
 
   const sendRollRequest = async (request: RollRequest) => {
-    if (!channel) return;
+    const ch = channelRef.current;
+    if (!ch) {
+      console.warn("[Realtime] Channel not ready yet, broadcast skipped");
+      return;
+    }
     
-    await channel.send({
+    await ch.send({
       type: "broadcast",
       event: "roll_request",
       payload: request,
@@ -165,5 +170,5 @@ export function useSupabaseRealtime(
     }
   };
 
-  return { logs, sendRollRequest, saveRollResult, channel, activePlayers };
+  return { logs, sendRollRequest, saveRollResult, channel: channelRef.current, activePlayers };
 }

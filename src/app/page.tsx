@@ -26,6 +26,13 @@ export const DICE_COLORS = [
   { name: "Royal Sapphire", hex: "#0f52ba" },
 ];
 
+export const DICE_STYLES = [
+  { id: "solid", name: "Solid Color", icon: "💎" },
+  { id: "rainbow", name: "Rainbow", icon: "🌈" },
+  { id: "magic", name: "Magic Dice", icon: "✨" },
+  { id: "mechanic", name: "Mechanic", icon: "⚙️" },
+];
+
 export const BG_PRESETS = [
   { name: "Windmill Valley", url: "/bg-fantasy.png" },
   { name: "Atmosphere 1", url: "/backgrounds/bg1.avif" },
@@ -130,7 +137,10 @@ export default function Home() {
   const handleSelectPlayer = (player: any) => {
     setPlayerName(player.name);
     setPlayerAvatar(player.avatar_url);
-    if (player.dice_color) setThemeColor(player.dice_color);
+    if (player.dice_color) {
+        setThemeColor(player.dice_color);
+        setDiceTheme(player.dice_color);
+    }
     if (player.bg_theme) setBgTheme(player.bg_theme);
     if (player.font_theme) setFontTheme(player.font_theme);
     setPlayerData(player);
@@ -561,10 +571,55 @@ export default function Home() {
         )}
 
         {showColorPicker && (
-          <div className="fixed top-24 right-8 z-[100] bg-black/95 backdrop-blur-3xl border border-white/10 p-6 rounded-[2.5rem] shadow-2xl w-72 animate-in slide-in-from-top-4 duration-300">
+          <div className="fixed top-24 right-8 z-[100] bg-black/95 backdrop-blur-3xl border border-white/10 p-6 rounded-[2.5rem] shadow-2xl w-80 animate-in slide-in-from-top-4 duration-300 max-h-[85vh] overflow-y-auto custom-scrollbar">
              <h3 className="text-xs font-black text-cyan-400 mb-4 tracking-widest uppercase">Dice Sorcery</h3>
-             <div className="grid grid-cols-2 gap-3">
-               {DICE_COLORS.map(c => <button key={c.name} onClick={() => setThemeColor(c.hex)} className={`w-full h-12 rounded-2xl border-2 transition-all hover:scale-105 ${themeColor === c.hex ? 'border-white shadow-lg' : 'border-white/5'}`} style={{ backgroundColor: c.hex }} />)}
+             
+             <div className="space-y-6">
+                <div>
+                  <p className="text-[10px] font-bold text-gray-500 mb-3 uppercase tracking-wider">Style Selection</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {DICE_STYLES.map(s => (
+                      <button 
+                        key={s.id} 
+                        onClick={() => {
+                          const val = s.id === "solid" ? DICE_COLORS[1].hex : s.id;
+                          setThemeColor(val);
+                          setDiceTheme(val);
+                          handleUpdatePlayer({ dice_color: val });
+                        }}
+                        className={`flex items-center gap-2 p-3 rounded-2xl border-2 transition-all ${
+                          (s.id === "solid" ? themeColor.startsWith('#') : themeColor === s.id) 
+                            ? 'border-gold bg-gold/10 text-white' 
+                            : 'border-white/5 bg-white/5 text-gray-400 hover:border-white/20'
+                        }`}
+                      >
+                        <span className="text-lg">{s.icon}</span>
+                        <span className="text-[10px] font-black uppercase">{s.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {themeColor.startsWith('#') && (
+                  <div className="pt-4 border-t border-white/5">
+                    <p className="text-[10px] font-bold text-gray-500 mb-3 uppercase tracking-wider">Color Palette</p>
+                    <div className="grid grid-cols-5 gap-2">
+                        {DICE_COLORS.map(c => (
+                        <button 
+                            key={c.name} 
+                            onClick={() => {
+                                setThemeColor(c.hex);
+                                setDiceTheme(c.hex);
+                                handleUpdatePlayer({ dice_color: c.hex });
+                            }} 
+                            className={`h-8 rounded-lg border-2 transition-all hover:scale-110 ${themeColor === c.hex ? 'border-white scale-110 shadow-lg' : 'border-white/10'}`} 
+                            style={{ backgroundColor: c.hex }}
+                            title={c.name}
+                        />
+                        ))}
+                    </div>
+                  </div>
+                )}
              </div>
           </div>
         )}

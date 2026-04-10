@@ -42,7 +42,7 @@ export default function DiceCanvas({ themeColor }: DiceCanvasProps) {
           theme: "default",
           themeColor,
           // ── Physics Tuning for Full Screen ────────────────────────────
-          scale: 18,           // Slightly smaller scale than 24 for better physics stability
+          scale: 9,           // Reduced scale from 18 to 9 (50% smaller)
           gravity: 1.5,
           startingHeight: 25,  // Drop from high up
           spinForce: 20,

@@ -9,6 +9,7 @@ interface QueueItem {
 }
 
 let _diceBox: any = null;
+let _currentTheme = "default";
 const _queue: QueueItem[] = [];
 
 // Predefined Style Palettes
@@ -69,13 +70,15 @@ export function registerDiceBox(box: any) {
   console.log("[DiceManager] DiceBox registered and ready ✓");
 }
 
-/** Update dice theme color */
-export function setDiceTheme(color: string) {
+/** Update dice theme or color globally */
+export function setDiceTheme(color: string, theme: string = "default") {
+  _currentTheme = theme;
   if (_diceBox) {
-    // If it's a hex color, apply globally. If it's a style name, roll logic handles it.
+    const config: any = { theme };
     if (color.startsWith('#')) {
-        try { _diceBox.updateConfig({ themeColor: color }); } catch (_) {}
+        config.themeColor = color;
     }
+    try { _diceBox.updateConfig(config); } catch (_) {}
   }
 }
 
@@ -117,17 +120,18 @@ function instantRoll(
 export function rollDice(
   req: RollRequest,
   getPlayerName: () => string,
-  onComplete: RollCompleteCallback
+  onComplete: RollCompleteCallback,
+  overrideTheme?: string
 ) {
   if (_diceBox) {
     const style = req.themeColor || "#9b111e";
+    const theme = overrideTheme || _currentTheme;
     
     let notation = req.formula;
     if (req.rollType === "hit_adv" || req.rollType === "hit_disadv") {
       notation = "2d20";
     }
 
-    // Split notation into die groups (e.g. "1d20+2d6" -> ["1d20", "2d6"])
     const groups = notation.split("+").map(s => s.trim()).filter(s => /\d*d\d+/i.test(s));
 
     if (groups.length > 0) {
@@ -135,8 +139,8 @@ export function rollDice(
 
       try {
         _diceBox.show();
+        _diceBox.updateConfig({ theme }); // Ensure the theme is correct for this roll
 
-        // Convert notation to DiceBox array format with colors
         const rollArray: any[] = [];
         groups.forEach(g => {
             const match = g.match(/^(\d*)d(\d+)/i);
@@ -152,7 +156,8 @@ export function rollDice(
                 rollArray.push({
                     qty: 1,
                     sides: faces,
-                    themeColor: color
+                    themeColor: color,
+                    theme // Per-roll theme
                 });
             }
         });

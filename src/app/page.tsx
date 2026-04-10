@@ -33,6 +33,17 @@ export const DICE_STYLES = [
   { id: "mechanic", name: "Mechanic", icon: "⚙️" },
 ];
 
+export const DICE_THEMES = [
+  { id: "default", name: "Classic", icon: "🎲" },
+  { id: "diceOfRolling", name: "Rolling", icon: "💎" },
+  { id: "gemstone", name: "Gemstone", icon: "🔮" },
+  { id: "rock", name: "Pebble", icon: "⛰️" },
+  { id: "wooden", name: "Forest", icon: "🌳" },
+  { id: "rust", name: "Ancient", icon: "🏚️" },
+  { id: "smooth", name: "Glass", icon: "🧊" },
+  { id: "blueGreenMetal", name: "Metal", icon: "🛠️" },
+];
+
 export const BG_PRESETS = [
   { name: "Windmill Valley", url: "/bg-fantasy.png" },
   { name: "Atmosphere 1", url: "/backgrounds/bg1.avif" },
@@ -64,6 +75,7 @@ const _FAIL_MSGS = ["เห้ออออออ", "เออไม่ต้อ�
 
 export default function Home() {
   const [themeColor, setThemeColor] = useState("#9b111e");
+  const [diceTheme, setDiceThemeState] = useState("default");
   const [bgTheme, setBgTheme] = useState(BG_PRESETS[0].url);
   const [fontTheme, setFontTheme] = useState(FONT_PRESETS[0].color);
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -139,8 +151,11 @@ export default function Home() {
     setPlayerAvatar(player.avatar_url);
     if (player.dice_color) {
         setThemeColor(player.dice_color);
-        setDiceTheme(player.dice_color);
     }
+    if (player.dice_theme) {
+        setDiceThemeState(player.dice_theme);
+    }
+    setDiceTheme(player.dice_color || "#9b111e", player.dice_theme || "default");
     if (player.bg_theme) setBgTheme(player.bg_theme);
     if (player.font_theme) setFontTheme(player.font_theme);
     setPlayerData(player);
@@ -576,15 +591,39 @@ export default function Home() {
              
              <div className="space-y-6">
                 <div>
-                  <p className="text-[10px] font-bold text-gray-500 mb-3 uppercase tracking-wider">Style Selection</p>
+                  <p className="text-[10px] font-bold text-gray-500 mb-3 uppercase tracking-wider">Surface Theme</p>
+                  <div className="grid grid-cols-4 gap-2">
+                    {DICE_THEMES.map(t => (
+                      <button 
+                        key={t.id} 
+                        onClick={() => {
+                          setDiceThemeState(t.id);
+                          setDiceTheme(themeColor, t.id);
+                          handleUpdatePlayer({ dice_theme: t.id });
+                        }}
+                        className={`flex flex-col items-center justify-center p-2 rounded-xl border-2 transition-all ${
+                          diceTheme === t.id 
+                            ? 'border-cyan-400 bg-cyan-400/10 text-white' 
+                            : 'border-white/5 bg-white/5 text-gray-500 hover:border-white/20'
+                        }`}
+                      >
+                        <span className="text-base mb-1">{t.icon}</span>
+                        <span className="text-[8px] font-black uppercase text-center leading-none">{t.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-[10px] font-bold text-gray-500 mb-3 uppercase tracking-wider">Color Style</p>
                   <div className="grid grid-cols-2 gap-2">
                     {DICE_STYLES.map(s => (
                       <button 
                         key={s.id} 
                         onClick={() => {
-                          const val = s.id === "solid" ? DICE_COLORS[1].hex : s.id;
+                          const val = s.id === "solid" ? (themeColor.startsWith('#') ? themeColor : DICE_COLORS[1].hex) : s.id;
                           setThemeColor(val);
-                          setDiceTheme(val);
+                          setDiceTheme(val, diceTheme);
                           handleUpdatePlayer({ dice_color: val });
                         }}
                         className={`flex items-center gap-2 p-3 rounded-2xl border-2 transition-all ${
@@ -594,7 +633,7 @@ export default function Home() {
                         }`}
                       >
                         <span className="text-lg">{s.icon}</span>
-                        <span className="text-[10px] font-black uppercase">{s.name}</span>
+                        <span className="text-[9px] font-black uppercase">{s.name}</span>
                       </button>
                     ))}
                   </div>
@@ -609,7 +648,7 @@ export default function Home() {
                             key={c.name} 
                             onClick={() => {
                                 setThemeColor(c.hex);
-                                setDiceTheme(c.hex);
+                                setDiceTheme(c.hex, diceTheme);
                                 handleUpdatePlayer({ dice_color: c.hex });
                             }} 
                             className={`h-8 rounded-lg border-2 transition-all hover:scale-110 ${themeColor === c.hex ? 'border-white scale-110 shadow-lg' : 'border-white/10'}`} 
@@ -674,7 +713,7 @@ export default function Home() {
         </div>
       )}
 
-      <DiceCanvas themeColor={themeColor} />
+      <DiceCanvas themeColor={themeColor} diceTheme={diceTheme} />
     </main>
   );
 }

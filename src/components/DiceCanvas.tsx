@@ -6,11 +6,12 @@ import { registerDiceBox, setDiceTheme } from "@/lib/diceManager";
 
 interface DiceCanvasProps {
   themeColor: string;
+  diceTheme: string;
 }
 
 let _initialized = false;
 
-export default function DiceCanvas({ themeColor }: DiceCanvasProps) {
+export default function DiceCanvas({ themeColor, diceTheme }: DiceCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -39,7 +40,7 @@ export default function DiceCanvas({ themeColor }: DiceCanvasProps) {
         box = new DiceBox({
           container: "#dice-container",
           assetPath: "/dice-assets/",
-          theme: "default",
+          theme: diceTheme,
           themeColor,
           // ── Physics Tuning for Full Screen ────────────────────────────
           scale: 9,           // Reduced scale from 18 to 9 (50% smaller)
@@ -86,8 +87,8 @@ export default function DiceCanvas({ themeColor }: DiceCanvasProps) {
   }, []);
 
   useEffect(() => {
-    setDiceTheme(themeColor);
-  }, [themeColor]);
+    setDiceTheme(themeColor, diceTheme);
+  }, [themeColor, diceTheme]);
 
   return (
     <div

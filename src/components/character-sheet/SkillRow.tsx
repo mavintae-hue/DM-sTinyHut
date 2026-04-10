@@ -23,9 +23,9 @@ export default function SkillRow({ name, modifier, isProficient, type, onRoll, e
       detail: { 
         x: e.clientX, 
         y: e.clientY, 
-        label: `${name} ${type === 'save' ? 'Saving Throw' : 'Skill Check'}`, 
+        label: `${type === 'save' ? 'Saving Throws' : 'Skills'} : ${name}`, 
         mod: modifier,
-        onSelect: (rollType: 'normal' | 'adv' | 'dis') => onRoll(name, modifier, rollType)
+        onSelect: (rollType: 'normal' | 'adv' | 'dis') => onRoll(`${type === 'save' ? 'Saving Throws' : 'Skills'} : ${name}`, modifier, rollType)
       }
     });
     window.dispatchEvent(event);
@@ -34,7 +34,7 @@ export default function SkillRow({ name, modifier, isProficient, type, onRoll, e
   return (
     <div 
       className={`group flex items-center justify-between py-1.5 px-2 hover:bg-white/5 rounded-lg border border-transparent hover:border-cyan-400/20 transition-all ${editable ? '' : 'cursor-pointer active:scale-[0.98]'}`}
-      onClick={() => (!editable && onRoll(name, modifier, 'normal'))}
+      onClick={() => (!editable && onRoll(`${type === 'save' ? 'Saving Throws' : 'Skills'} : ${name}`, modifier, 'normal'))}
       onContextMenu={handleContextMenu}
     >
       <div className="flex items-center gap-3">

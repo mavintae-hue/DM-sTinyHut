@@ -34,7 +34,7 @@ export default function ActionRow({ action, playerName, onRoll, onEdit, onDelete
   const handleHitRoll = (type: "hit_normal" | "hit_adv" | "hit_disadv") => {
     onRoll({
       playerName,
-      actionName: action.name,
+      actionName: `Actions : ${action.name}`,
       rollType: type,
       formula: "1d20", // DiceCanvas handles making it 2d20 for adv/disadv
       modifier: action.hitBonus,
@@ -84,7 +84,7 @@ export default function ActionRow({ action, playerName, onRoll, onEdit, onDelete
 
     onRoll({
       playerName,
-      actionName: action.name,
+      actionName: `Actions : ${action.name}`,
       rollType: isCrit ? "damage_crit" : "damage_normal",
       formula: baseDice,
       modifier: modifierTotal,

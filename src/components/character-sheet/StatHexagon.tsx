@@ -20,9 +20,9 @@ export default function StatHexagon({ label, score, modifier, onRoll, editable, 
       detail: { 
         x: e.clientX, 
         y: e.clientY, 
-        label: `${label} Check`, 
+        label: `Ability Check : ${label}`, 
         mod: modifier,
-        onSelect: (type: 'normal' | 'adv' | 'dis') => onRoll(label, modifier, type)
+        onSelect: (type: 'normal' | 'adv' | 'dis') => onRoll(`Ability Check : ${label}`, modifier, type)
       }
     });
     window.dispatchEvent(event);
@@ -31,7 +31,7 @@ export default function StatHexagon({ label, score, modifier, onRoll, editable, 
   return (
     <div 
       className={`relative w-20 h-24 group select-none active:scale-95 transition-all ${editable ? '' : 'cursor-pointer'}`}
-      onClick={() => (!editable && onRoll(label, modifier, 'normal'))}
+      onClick={() => (!editable && onRoll(`Ability Check : ${label}`, modifier, 'normal'))}
       onContextMenu={handleContextMenu}
     >
       {/* Hexagon Background SVG */}

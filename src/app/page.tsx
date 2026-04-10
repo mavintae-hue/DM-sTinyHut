@@ -317,9 +317,13 @@ export default function Home() {
       rollType = type === 'adv' ? 'damage_crit' : 'damage_normal';
     }
 
+    let finalLabel = label;
+    if (type === 'adv') finalLabel += " (Advantage)";
+    if (type === 'dis') finalLabel += " (Disadvantage)";
+
     const request: RollRequest = {
       playerName,
-      actionName: label,
+      actionName: finalLabel,
       rollType,
       formula,
       modifier: mod,

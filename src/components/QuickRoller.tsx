@@ -40,7 +40,7 @@ export default function QuickRoller({ playerName, onRoll }: QuickRollerProps) {
 
     onRoll({
       playerName,
-      actionName: "Quick Roll",
+      actionName: `Quick Roll : ${formula}`,
       rollType: "custom",
       formula: formula,
       modifier: 0,

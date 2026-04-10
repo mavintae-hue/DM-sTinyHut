@@ -166,7 +166,7 @@ export function rollDice(
       _pendingRolls.set(rollId, { req, getPlayerName, onComplete });
 
       try {
-        _diceBox.show();
+        console.log("[DiceManager] Attempting to roll with DiceBox...");
         _diceBox.updateConfig({ theme }); 
 
         const rollArray: any[] = [];
@@ -192,7 +192,7 @@ export function rollDice(
             }
         });
 
-        console.log("[DiceManager] Rolling:", rollArray.length, "dice for:", req.actionName);
+        console.log("[DiceManager] Rolling payload:", JSON.stringify(rollArray));
         _diceBox.roll(rollArray);
         return;
       } catch (err) {

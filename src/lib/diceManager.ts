@@ -67,8 +67,10 @@ export function registerDiceBox(box: any) {
       finalTotal = chosenDie + req.modifier;
     }
 
-    const isNat20 = req.rollType.startsWith("hit_") && chosenDie === 20;
-    const isNat1  = req.rollType.startsWith("hit_") && chosenDie === 1;
+    // Natural 20/1 only applies to d20 hit/skill/save rolls
+    const isD20 = req.formula.toLowerCase().includes("d20") || req.rollType.startsWith("hit_");
+    const isNat20 = isD20 && chosenDie === 20;
+    const isNat1  = isD20 && chosenDie === 1;
 
     onComplete({
       playerName: req.playerName,
@@ -121,8 +123,9 @@ function instantRoll(
     finalTotal = chosenDie + req.modifier;
   }
 
-  const isNat20 = req.rollType.startsWith("hit_") && chosenDie === 20;
-  const isNat1  = req.rollType.startsWith("hit_") && chosenDie === 1;
+  const isD20 = req.formula.toLowerCase().includes("d20") || req.rollType.startsWith("hit_");
+  const isNat20 = isD20 && chosenDie === 20;
+  const isNat1  = isD20 && chosenDie === 1;
 
   onComplete({
     playerName: req.playerName,

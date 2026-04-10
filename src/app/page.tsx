@@ -10,7 +10,7 @@ import BeyondDashboard from "@/components/character-sheet/BeyondDashboard";
 // Load DiceCanvas dynamically to prevent SSR issues with the 3D physics engine
 const DiceCanvas = dynamic(() => import("@/components/DiceCanvas"), { ssr: false });
 import { useSupabaseRealtime, RollRequest } from "@/hooks/useSupabaseRealtime";
-import { rollDice } from "@/lib/diceManager";
+import { rollDice, setDiceTheme } from "@/lib/diceManager";
 import { LogIn, Users, Trash2, Palette, UserPlus, ChevronLeft, Paintbrush, Globe, Sparkles } from "lucide-react";
 
 export const DICE_COLORS = [

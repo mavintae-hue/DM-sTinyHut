@@ -127,7 +127,10 @@ export default function Home() {
     if (roomUuid) {
       const fetchPlayers = async () => {
         const { data } = await supabase.from("players").select("*").eq("room_id", roomUuid);
-        if (data) setRoomPlayers(data);
+        if (data) {
+          console.log("[fetchPlayers] Data received:", data);
+          setRoomPlayers(data);
+        }
       };
       fetchPlayers();
     }
@@ -164,6 +167,7 @@ export default function Home() {
     setDiceTheme(player.dice_color || "#9b111e", player.dice_theme || "default");
     if (player.bg_theme) setBgTheme(player.bg_theme);
     if (player.font_theme) setFontTheme(player.font_theme);
+    console.log("[handleSelectPlayer] Selecting:", player);
     setPlayerData(player);
     setJoined(true);
     if (roomUuid) fetchActions(roomUuid, player.name);
@@ -294,7 +298,7 @@ export default function Home() {
       console.warn("DB update issue (likely missing columns like dice_theme):", error.message);
       // We don't revert local state anymore to keep UI snappy even if some settings don't persist
     } else if (data) {
-      setPlayerData(data);
+      setPlayerData((prev: any) => ({ ...prev, ...data }));
       if (updates.name) setPlayerName(data.name);
     }
   };

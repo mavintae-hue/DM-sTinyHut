@@ -28,7 +28,10 @@ export function registerDiceBox(box: any) {
     const item = _pendingRolls.get(rollId);
     
     if (!item) {
-        // This was likely a remote roll from another player or already handled
+        // If we can't find the roll ID, it might be a peer roll or an older ID format.
+        // We'll just do a safety clear after a while but don't return early if it's our own.
+        // For now, let's log it for debugging
+        console.log("[DiceManager] Result received for unknown ID:", rollId);
         setTimeout(() => { try { _diceBox?.clear(); } catch (_) {} }, 2500);
         return;
     }

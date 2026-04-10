@@ -94,17 +94,21 @@ export default function DiceCanvas({ themeColor, diceTheme }: DiceCanvasProps) {
     <div
       id="dice-container"
       ref={containerRef}
+      className="fixed inset-0 pointer-events-none"
       style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
+        zIndex: 500,
         width: "100vw",
         height: "100vh",
-        zIndex: 9999,
         pointerEvents: "none",
         background: "transparent",
-        overflow: "visible", // Ensure dice aren't clipped
+        overflow: "visible",
       }}
-    />
+    >
+      <style jsx global>{`
+        #dice-container canvas {
+          pointer-events: none !important;
+        }
+      `}</style>
+    </div>
   );
 }

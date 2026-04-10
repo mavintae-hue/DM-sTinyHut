@@ -43,7 +43,41 @@ export default function BeyondDashboard({
   const [avatarUrl, setAvatarUrl] = useState(player?.avatar_url || "");
 
   // Ability Modifiers Calculation
-  const getMod = (score: number) => Math.floor((score - 10) / 2);
+  const getMod = (score: number) => Math.floor(((score || 10) - 10) / 2);
+
+  // Initialize skills if missing or empty
+  useEffect(() => {
+    if (!player) return;
+    
+    const defaultSkills = [
+      "Acrobatics", "Animal Handling", "Arcana", "Athletics", "Deception", 
+      "History", "Insight", "Intimidation", "Investigation", "Medicine", 
+      "Nature", "Perception", "Performance", "Persuasion", "Religion", 
+      "Sleight of Hand", "Stealth", "Survival"
+    ];
+
+    const currentSkills = Array.isArray(player.skills) ? player.skills : [];
+    if (currentSkills.length === 0) {
+      console.log("[BeyondDashboard] Initializing default skills for", player.name);
+      const initializedSkills = defaultSkills.map(name => ({
+        name,
+        modifier: 0,
+        isProficient: false
+      }));
+      onUpdatePlayer({ skills: initializedSkills });
+    }
+
+    const currentSaves = Array.isArray(player.saves) ? player.saves : [];
+    if (currentSaves.length === 0) {
+      console.log("[BeyondDashboard] Initializing default saves for", player.name);
+      const initializedSaves = ["Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma"].map(name => ({
+        name,
+        modifier: 0,
+        isProficient: false
+      }));
+      onUpdatePlayer({ saves: initializedSaves });
+    }
+  }, [player?.id]);
 
   // Listener for custom roll context menu event
   useEffect(() => {
@@ -79,7 +113,7 @@ export default function BeyondDashboard({
               </div>
             </div>
             <div className="absolute -bottom-1 -right-1 bg-darker border border-white/10 px-1.5 py-0.5 rounded-full text-[8px] font-bold text-gray-400">
-              LVL {player.class_level?.match(/\d+/)?.[0] || '??'}
+              LVL {((player.class_level || player.classLevel || "").match(/\d+/)?.[0]) || (player.class_level || player.classLevel) || '1'}
             </div>
           </div>
           <div>
@@ -99,7 +133,7 @@ export default function BeyondDashboard({
             ) : (
               <>
                 <h1 className="text-2xl font-black text-white tracking-tighter mb-0.5">{player.name}</h1>
-                <p className="text-xs font-bold text-cyan-400 uppercase tracking-widest opacity-80">{player.class_level || 'Adventurer'}</p>
+                <p className="text-xs font-bold text-cyan-400 uppercase tracking-widest opacity-80">{player.class_level || player.classLevel || 'Adventurer'}</p>
               </>
             )}
           </div>
@@ -127,7 +161,7 @@ export default function BeyondDashboard({
               <input
                 type="number"
                 className="bg-transparent text-2xl font-black tracking-tighter w-12 text-center outline-none focus:text-white border-b border-white/10 text-cyan-400"
-                value={player.proficiency_bonus || 2}
+                value={player.proficiency_bonus ?? 2}
                 onChange={(e) => onUpdatePlayer({ proficiency_bonus: parseInt(e.target.value) || 0 })}
               />
             ) : (
@@ -191,7 +225,7 @@ export default function BeyondDashboard({
           <div className="bg-[#151515]/60 block border border-white/5 rounded-[1.5rem] p-4 shadow-xl">
             <h3 className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] mb-2 ml-1">Saving Throws</h3>
             <div className="space-y-1">
-              {(player.saves && player.saves.length === 6 ? player.saves : [
+              {((Array.isArray(player.saves) && player.saves.length === 6) ? player.saves : [
                 { name: "Strength", modifier: getMod(player.ability_scores?.str || 10), isProficient: false },
                 { name: "Dexterity", modifier: getMod(player.ability_scores?.dex || 10), isProficient: false },
                 { name: "Constitution", modifier: getMod(player.ability_scores?.con || 10), isProficient: false },
@@ -250,7 +284,7 @@ export default function BeyondDashboard({
               )}
             </div>
             <div className="space-y-1 overflow-y-auto custom-scrollbar pr-2 flex-1">
-              {(player.skills || []).map((skill: any, i: number) => (
+              {(Array.isArray(player.skills) ? player.skills : []).map((skill: any, i: number) => (
                 <SkillRow 
                   key={i} 
                   name={skill.name} 

@@ -10,7 +10,7 @@ interface QueueItem {
 
 let _diceBox: any = null;
 let _currentTheme = "default";
-const _queue: QueueItem[] = [];
+const _pendingRolls = new Map<string, QueueItem>();
 
 // Predefined Style Palettes
 const RAINBOW_COLORS = ["#ff0000", "#ff7f00", "#ffff00", "#00ff00", "#00ffff", "#0000ff", "#8b00ff"];
@@ -22,21 +22,38 @@ export function registerDiceBox(box: any) {
   _diceBox = box;
 
   box.onRollComplete = (results: any) => {
-    const item = _queue.shift();
-    if (!item) return;
-
+    // dice-box result contains the 'id' (or 'groupId' depends on version/usage)
+    // We try to find our roll in _pendingRolls using any of the dice results
+    const rollId = results[0]?.groupId || results[0]?.id;
+    const item = _pendingRolls.get(rollId);
+    
+    if (!item) {
+        // This was likely a remote roll from another player or already handled
+        setTimeout(() => { try { _diceBox?.clear(); } catch (_) {} }, 2500);
+        return;
+    }
+    
+    _pendingRolls.delete(rollId);
     const { req, onComplete } = item;
 
     let totalFromDice = 0;
     const rolls: number[] = [];
 
     if (Array.isArray(results)) {
-      results.forEach((group: any) =>
-        group.rolls.forEach((r: any) => {
-          totalFromDice += r.value;
-          rolls.push(r.value);
-        })
-      );
+      results.forEach((group: any) => {
+          // If we are getting an array of individual dice
+          if (group.value !== undefined) {
+              totalFromDice += group.value;
+              rolls.push(group.value);
+          } 
+          // If we are getting an array of groups (older versions/different configs)
+          else if (group.rolls) {
+              group.rolls.forEach((r: any) => {
+                  totalFromDice += r.value;
+                  rolls.push(r.value);
+              });
+          }
+      });
     }
 
     let chosenDie = rolls[0] || 0;
@@ -75,7 +92,7 @@ export function setDiceTheme(color: string, theme: string = "default") {
   _currentTheme = theme;
   if (_diceBox) {
     const config: any = { theme };
-    if (color.startsWith('#')) {
+    if (color && color.startsWith('#')) {
         config.themeColor = color;
     }
     try { _diceBox.updateConfig(config); } catch (_) {}
@@ -132,14 +149,18 @@ export function rollDice(
       notation = "2d20";
     }
 
+    // Improved parsing: keep signs like +5 or -2 but focus on dice groups
     const groups = notation.split("+").map(s => s.trim()).filter(s => /\d*d\d+/i.test(s));
 
     if (groups.length > 0) {
-      _queue.push({ req, getPlayerName, onComplete });
+      // Create a unique ID for this roll to track its metadata
+      const rollId = `roll_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      _pendingRolls.set(rollId, { req, getPlayerName, onComplete });
 
       try {
         _diceBox.show();
-        _diceBox.updateConfig({ theme }); // Ensure the theme is correct for this roll
+        // Set the global theme for the canvas before rolling these specific dice
+        _diceBox.updateConfig({ theme }); 
 
         const rollArray: any[] = [];
         groups.forEach(g => {
@@ -157,7 +178,9 @@ export function rollDice(
                     qty: 1,
                     sides: faces,
                     themeColor: color,
-                    theme // Per-roll theme
+                    theme,
+                    groupId: rollId, // Passing both to be safe
+                    id: rollId      // Older versions use 'id'
                 });
             }
         });
@@ -166,7 +189,7 @@ export function rollDice(
         return;
       } catch (err) {
         console.error("[DiceManager] DiceBox.roll() error:", err);
-        _queue.pop();
+        _pendingRolls.delete(rollId);
       }
     }
   }

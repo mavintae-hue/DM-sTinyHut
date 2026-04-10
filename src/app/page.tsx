@@ -106,7 +106,13 @@ export default function Home() {
   const { logs, sendRollRequest, saveRollResult, activePlayers } = useSupabaseRealtime(
     joined ? (roomUuid || "") : "",
     playerName,
-    playerAvatar
+    playerAvatar,
+    (req) => {
+        // Only roll if it's from someone else
+        if (req.playerName !== playerName) {
+            rollDice(req, () => req.playerName, () => {}, req.diceTheme);
+        }
+    }
   );
 
   const fetchMetadata = useCallback(async () => {
@@ -285,7 +291,8 @@ export default function Home() {
       .single();
 
     if (error) {
-      setPlayerData(prevData);
+      console.warn("DB update issue (likely missing columns like dice_theme):", error.message);
+      // We don't revert local state anymore to keep UI snappy even if some settings don't persist
     } else if (data) {
       setPlayerData(data);
       if (updates.name) setPlayerName(data.name);
@@ -317,6 +324,7 @@ export default function Home() {
       formula,
       modifier: mod,
       themeColor: themeColor || '#9b111e',
+      diceTheme: diceTheme || 'default',
     };
 
     // Call diceManager directly — no React state, no broadcast timing issues
@@ -331,7 +339,7 @@ export default function Home() {
   };
 
   const handleQuickRoll = (request: RollRequest) => {
-    const req = { ...request, themeColor };
+    const req = { ...request, themeColor, diceTheme };
     rollDice(req, () => playerName, (res) => saveRollResult({ ...res, resultDetails: { ...res.resultDetails, player_avatar: playerAvatar } }));
     sendRollRequest(req);
   };
@@ -666,6 +674,7 @@ export default function Home() {
         <div className="flex-1 overflow-y-auto p-2 md:p-4 custom-scrollbar">
           <div className="w-full max-w-[1700px] mx-auto">
             <BeyondDashboard
+              key={playerData.id}
               player={playerData}
               actions={actions}
               playerName={playerName}

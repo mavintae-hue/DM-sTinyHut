@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { RealtimeChannel } from "@supabase/supabase-js";
 
@@ -11,6 +11,7 @@ export type RollRequest = {
   formula: string; // e.g. "1d20+5", "2d6+3"
   modifier: number;
   themeColor?: string;
+  diceTheme?: string;
 };
 
 export type RollResult = {
@@ -31,10 +32,21 @@ export type RollResult = {
 
 export type ActivePlayer = { name: string, avatar: string | null };
 
-export function useSupabaseRealtime(roomId: string, playerName: string, playerAvatar: string | null) {
+export function useSupabaseRealtime(
+  roomId: string, 
+  playerName: string, 
+  playerAvatar: string | null,
+  onRollReceived?: (req: RollRequest) => void
+) {
   const [channel, setChannel] = useState<RealtimeChannel | null>(null);
   const [logs, setLogs] = useState<RollResult[]>([]);
   const [activePlayers, setActivePlayers] = useState<ActivePlayer[]>([]);
+  const onRollReceivedRef = useRef(onRollReceived);
+
+  // Update ref when callback changes
+  useEffect(() => {
+    onRollReceivedRef.current = onRollReceived;
+  }, [onRollReceived]);
 
   useEffect(() => {
     if (!roomId) return;
@@ -65,14 +77,17 @@ export function useSupabaseRealtime(roomId: string, playerName: string, playerAv
 
     const roomChannel = supabase.channel(`room:${roomId}`, {
       config: {
-        broadcast: { self: true },
+        broadcast: { self: false }, // Don't broadcast to self to avoid echo
         presence: { key: playerName },
       },
     });
 
     roomChannel
       .on("broadcast", { event: "roll_request" }, (payload) => {
-        console.log("Received roll request:", payload.payload);
+        const req = payload.payload as RollRequest;
+        if (req && req.playerName !== playerName) {
+            onRollReceivedRef.current?.(req);
+        }
       })
       .on("presence", { event: "sync" }, () => {
         const newState = roomChannel.presenceState();
@@ -113,7 +128,7 @@ export function useSupabaseRealtime(roomId: string, playerName: string, playerAv
       )
       .subscribe(async (status) => {
         if (status === "SUBSCRIBED") {
-          console.log("Connected to room:", roomId);
+          console.log("[Presence] Connected as:", playerName);
           await roomChannel.track({ online_at: new Date().toISOString(), avatar_url: playerAvatar });
         }
       });

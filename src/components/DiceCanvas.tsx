@@ -18,38 +18,72 @@ export default function DiceCanvas({ themeColor }: DiceCanvasProps) {
     if (_initialized) return;
     _initialized = true;
 
-    const timer = setTimeout(async () => {
-      if (!containerRef.current) return;
-      try {
-        const w = window.innerWidth;
-        const h = window.innerHeight;
+    let box: any = null;
 
-        const box = new DiceBox({
+    const initDice = async () => {
+      const container = containerRef.current;
+      if (!container) return;
+
+      // Force container to fill viewport exactly
+      const updateSize = () => {
+        const W = window.innerWidth;
+        const H = window.innerHeight;
+        container.style.width = `${W}px`;
+        container.style.height = `${H}px`;
+        return { W, H };
+      };
+
+      const { W, H } = updateSize();
+
+      try {
+        box = new DiceBox({
           container: "#dice-container",
           assetPath: "/dice-assets/",
           theme: "default",
           themeColor,
-
-          // ── Full-screen physics world ─────────────────────────────────
-          scale: 24,
-          gravity: 1.5,       // Settle faster after spreading
-          startingHeight: 8,  // Low drop = more horizontal momentum on bounce
-          spinForce: 20,      // Max spin for epic look
-          throwForce: 40,     // HIGH force so dice spread across full screen
+          // ── Physics Tuning for Full Screen ────────────────────────────
+          scale: 18,           // Slightly smaller scale than 24 for better physics stability
+          gravity: 1.5,
+          startingHeight: 25,  // Drop from high up
+          spinForce: 20,
+          throwForce: 15,      // Moderate throw to keep them on screen but spread out
           // ─────────────────────────────────────────────────────────────
         });
 
         await box.init();
+
+        // Ensure canvas matches container
+        const canvas = container.querySelector("canvas");
+        if (canvas) {
+          canvas.style.width = "100%";
+          canvas.style.height = "100%";
+          canvas.style.display = "block";
+        }
+
         registerDiceBox(box);
-        console.log(`[DiceCanvas] ✓ Ready — ${w}x${h}px world`);
+        console.log(`[DiceCanvas] ✓ Initialized ${W}x${H}`);
+
+        // Listen for resizes to keep the visual canvas correct
+        window.addEventListener("resize", updateSize);
+
       } catch (e) {
         console.error("[DiceCanvas] Init failed:", e);
         _initialized = false;
       }
-    }, 300);
+    };
 
-    return () => clearTimeout(timer);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    // Use requestAnimationFrame to ensure DOM is ready
+    const handle = requestAnimationFrame(() => {
+        initDice();
+    });
+
+    return () => {
+        cancelAnimationFrame(handle);
+        // We don't remove the resize listener here because _initialized is global
+        // and we want to keep the box alive. In a real app we'd handle cleanup better
+        // but for this singleton pattern we persist.
+    };
+  }, []);
 
   useEffect(() => {
     setDiceTheme(themeColor);
@@ -68,6 +102,7 @@ export default function DiceCanvas({ themeColor }: DiceCanvasProps) {
         zIndex: 9999,
         pointerEvents: "none",
         background: "transparent",
+        overflow: "visible", // Ensure dice aren't clipped
       }}
     />
   );

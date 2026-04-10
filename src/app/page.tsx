@@ -138,6 +138,18 @@ export default function Home() {
     if (roomUuid) fetchActions(roomUuid, player.name);
   };
 
+  const handleDeletePlayer = async (e: React.MouseEvent, pId: string, pName: string) => {
+    e.stopPropagation();
+    if (!confirm(`Are you sure you want to banish ${pName} forever?`)) return;
+    
+    const { error } = await supabase.from("players").delete().eq("id", pId);
+    if (!error) {
+      setRoomPlayers(roomPlayers.filter(p => p.id !== pId));
+    } else {
+      alert("Failed to banish hero: " + error.message);
+    }
+  };
+
   const handleCreatePlayer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPlayerName.trim() || !roomUuid) return;
@@ -453,12 +465,24 @@ export default function Home() {
           <h2 className="text-4xl font-black text-white text-center mb-10 uppercase tracking-tighter">Choose Your Fate</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {roomPlayers.map(p => (
-              <button key={p.id} onClick={() => handleSelectPlayer(p)} className="flex flex-col items-center gap-4 p-6 bg-white/5 border border-white/5 rounded-3xl hover:border-gold transition-all">
-                <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-white/10">
-                  <img src={p.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.name}`} className="w-full h-full object-cover" alt="" />
-                </div>
-                <span className="font-bold text-white">{p.name}</span>
-              </button>
+              <div key={p.id} className="relative group">
+                <button 
+                  onClick={() => handleSelectPlayer(p)} 
+                  className="w-full flex flex-col items-center gap-4 p-6 bg-white/5 border border-white/5 rounded-3xl hover:border-gold transition-all"
+                >
+                  <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-white/10">
+                    <img src={p.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.name}`} className="w-full h-full object-cover" alt="" />
+                  </div>
+                  <span className="font-bold text-white">{p.name}</span>
+                </button>
+                <button 
+                  onClick={(e) => handleDeletePlayer(e, p.id, p.name)}
+                  className="absolute top-2 right-2 p-2 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                  title="Delete Character"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
             ))}
             <button onClick={() => setShowNewPlayer(true)} className="flex flex-col items-center justify-center gap-4 p-6 bg-white/5 border-2 border-dashed border-white/5 rounded-3xl hover:border-gold">
               <UserPlus className="w-10 h-10 text-gray-600" />

@@ -102,9 +102,9 @@ export default function Home() {
   const [isUploading, setIsUploading] = useState(false);
   const [savedRooms, setSavedRooms] = useState<{ id: string, name: string }[]>([]);
 
-  // Realtime hook
+  // Realtime hook — always pass roomUuid so channel connects as soon as room is known
   const { logs, sendRollRequest, saveRollResult, activePlayers } = useSupabaseRealtime(
-    joined ? (roomUuid || "") : "",
+    roomUuid || "",
     playerName,
     playerAvatar,
     (req) => {

@@ -39,9 +39,15 @@ export function useSupabaseRealtime(
   onRollReceived?: (req: RollRequest) => void
 ) {
   const channelRef = useRef<RealtimeChannel | null>(null);
+  const roomIdRef = useRef<string>(roomId);
   const [logs, setLogs] = useState<RollResult[]>([]);
   const [activePlayers, setActivePlayers] = useState<ActivePlayer[]>([]);
   const onRollReceivedRef = useRef(onRollReceived);
+
+  // Keep refs updated when values change
+  useEffect(() => {
+    roomIdRef.current = roomId;
+  }, [roomId]);
 
   // Update ref when callback changes
   useEffect(() => {
@@ -156,8 +162,16 @@ export function useSupabaseRealtime(
   };
 
   const saveRollResult = async (result: Omit<RollResult, "timestamp">) => {
+    const currentRoomId = roomIdRef.current;
+    if (!currentRoomId) {
+      console.warn("[Realtime] saveRollResult: roomId is empty, skipping");
+      return;
+    }
+
+    console.log("[Realtime] Saving roll result for room:", currentRoomId, "| action:", result.actionName);
+
     const { error } = await supabase.from("rolls_history").insert({
-      room_id: roomId,
+      room_id: currentRoomId,
       player_name: result.playerName,
       action_name: result.actionName,
       roll_type: result.rollType,
@@ -166,7 +180,7 @@ export function useSupabaseRealtime(
     });
 
     if (error) {
-      console.error("Error saving roll result:", error);
+      console.error("[Realtime] Error saving roll result:", error);
     }
   };
 

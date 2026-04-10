@@ -42,11 +42,15 @@ export default function DiceCanvas({ themeColor, diceTheme }: DiceCanvasProps) {
     const initDice = async () => {
       console.log("[DiceCanvas] Starting DiceBox initialization...");
       try {
-        const { default: DiceBox } = await import("@3d-dice/dice-box");
+        const mod = await import("@3d-dice/dice-box");
+        const DiceBox = mod.default || mod;
 
-        // Note: AssetPath must be the URL path to the directory containing themes/ammo/3d_files
-        const box = new DiceBox({
-          container: "#dice-box-root",
+        if (typeof DiceBox !== 'function') {
+          throw new Error("DiceBox constructor not found in module exports");
+        }
+
+        // Standard constructor: (container_selector, options)
+        const box = new (DiceBox as any)("#dice-box-root", {
           assetPath: "/dice-assets/", 
           theme: diceTheme,
           themeColor,
@@ -66,14 +70,14 @@ export default function DiceCanvas({ themeColor, diceTheme }: DiceCanvasProps) {
             width: "100%",
             height: "100%",
             display: "block",
-            pointerEvents: "none", // Critical: allow clicks to pass through dice
+            pointerEvents: "none",
           });
         }
 
         registerDiceBox(box);
         _boxInitialized = true;
         _boxInitializing = false;
-        (window as any).__diceBox = box; // For console debugging
+        (window as any).__diceBox = box;
         console.log("[DiceCanvas] ✓ DiceBox ready and registered!");
 
       } catch (err) {
@@ -82,9 +86,8 @@ export default function DiceCanvas({ themeColor, diceTheme }: DiceCanvasProps) {
       }
     };
 
-    // Small delay after first frame to guarantee DOM is settled
-    const raf = requestAnimationFrame(() => setTimeout(initDice, 150));
-    return () => cancelAnimationFrame(raf);
+    initDice();
+    return () => {};
   }, []);
 
   // Sync theme/color to DiceBox whenever props change

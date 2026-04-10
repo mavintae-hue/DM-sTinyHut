@@ -19,7 +19,12 @@ const MECHANIC_COLORS = ["#71717a", "#52525b", "#3f3f46", "#27272a", "#d4d4d8"];
 
 /** Called by DiceCanvas once DiceBox is initialized */
 export function registerDiceBox(box: any) {
+  if (!box) return;
   _diceBox = box;
+  (window as any).__diceManager = {
+    get box() { return _diceBox; },
+    get pending() { return _pendingRolls; }
+  };
 
   box.onRollComplete = (results: any) => {
     // dice-box result contains the 'id' (or 'groupId' depends on version/usage)

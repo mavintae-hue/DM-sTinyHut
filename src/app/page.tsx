@@ -606,6 +606,28 @@ export default function Home() {
                 3D: {diceStatus === 'ready' ? 'READY' : diceStatus === 'loading' ? 'LOADING' : diceStatus === 'error' ? 'INIT ERROR' : 'IDLE'}
               </span>
 
+              {diceStatus === 'ready' && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    console.log("[DEBUG] Triggering manual test roll...");
+                    rollDice({
+                      playerName: realm?.name || "Tester",
+                      actionName: "DEBUG TEST ROLL",
+                      formula: "1d20",
+                      modifier: 0,
+                      rollType: "action"
+                    }, () => "Debug User", (res) => {
+                      console.log("[DEBUG] Test roll result:", res.resultTotal);
+                      addLog(`DEBUG TEST: ${res.resultTotal}`);
+                    });
+                  }}
+                  className="ml-2 pl-2 border-l border-white/20 text-[8px] font-black text-white/40 hover:text-white transition-colors uppercase"
+                >
+                  Force Test
+                </button>
+              )}
+
               {/* Tooltip on hover */}
               <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-black/95 text-[8px] font-black p-3 rounded-xl border border-white/10 pointer-events-none z-[100] shadow-2xl">
                 {diceStatus === 'ready' && "PHYSICS ENGINE ACTIVE - DICE WILL ROLL"}

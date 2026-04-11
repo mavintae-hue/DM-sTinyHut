@@ -20,27 +20,49 @@ export default function DiceCanvas({ themeColor, diceTheme }: DiceCanvasProps) {
       console.log("[DiceCanvas] Starting DiceBox initialization...");
       setDiceInitStatus('loading');
 
-      // Inject container directly into body so it's guaranteed to exist
-      let container = document.getElementById("dice-box-root");
-      if (!container) {
-        container = document.createElement("div");
-        container.id = "dice-box-root";
+      try {
+        // Inject container directly into body so it's guaranteed to exist
+        let container = document.getElementById("dice-box-root");
+        if (!container) {
+          container = document.createElement("div");
+          container.id = "dice-box-root";
+          document.body.appendChild(container);
+        }
+
+        // Absolute reinforcement of styling
         Object.assign(container.style, {
           position: "fixed",
           top: "0",
           left: "0",
           width: "100vw",
           height: "100vh",
-          pointerEvents: "none",
-          zIndex: "500",
+          zIndex: "100000",
           overflow: "visible",
           background: "transparent",
+          pointerEvents: "none",
         });
-        document.body.appendChild(container);
-        console.log("[DiceCanvas] Injected #dice-box-root into body");
-      }
 
-      try {
+        // Inject global CSS to force any canvas inside to be visible
+        const styleId = "dice-box-visibility-style";
+        if (!document.getElementById(styleId)) {
+          const style = document.createElement("style");
+          style.id = styleId;
+          style.innerHTML = `
+            #dice-box-root canvas {
+              display: block !important;
+              visibility: visible !important;
+              width: 100vw !important;
+              height: 100vh !important;
+              position: fixed !important;
+              top: 0 !important;
+              left: 0 !important;
+              z-index: 100000 !important;
+              pointer-events: none !important;
+            }
+          `;
+          document.head.appendChild(style);
+        }
+
         const mod = await import("@3d-dice/dice-box");
         const DiceBox = mod.default || mod;
 
@@ -70,12 +92,15 @@ export default function DiceCanvas({ themeColor, diceTheme }: DiceCanvasProps) {
         // Style the resulting canvas directly
         const canvas = container!.querySelector("canvas");
         if (canvas) {
+          console.log("[DiceCanvas] Canvas found in DOM, applying styles.");
           Object.assign(canvas.style, {
             width: "100%",
             height: "100%",
             display: "block",
             pointerEvents: "none",
           });
+        } else {
+          console.warn("[DiceCanvas] DiceBox initialized but no canvas found in container!");
         }
 
         registerDiceBox(box);
@@ -93,13 +118,13 @@ export default function DiceCanvas({ themeColor, diceTheme }: DiceCanvasProps) {
     // Use a slight delay to ensure the body is ready in Next.js hydrate phase
     const timer = setTimeout(initDice, 100);
     return () => clearTimeout(timer);
-  }, []);
+  }, [themeColor, diceTheme]);
 
   // Sync theme/color to DiceBox whenever props change
   useEffect(() => {
     setDiceTheme(themeColor, diceTheme);
   }, [themeColor, diceTheme]);
 
-  // No rendered DOM — container lives directly in document.body
+  // No rendered DOM in the React tree — container lives directly in document.body
   return null;
 }

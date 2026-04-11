@@ -208,12 +208,37 @@ export function rollDice(
         });
 
         console.log("[DiceManager] Rolling payload:", JSON.stringify(rollArray));
-        _diceBox.roll(rollArray);
+        
+        // Double check DiceBox instance
+        if (!_diceBox || typeof _diceBox.roll !== 'function') {
+           throw new Error("DiceBox instance is corrupted or roll method missing");
+        }
+
+        // Primary attempt: structured payload
+        const result = _diceBox.roll(rollArray);
+        
+        // If it's a promise, we can track it (though we don't await to avoid blocking)
+        if (result instanceof Promise) {
+            result.catch(e => console.error("[DiceBox] Roll Promise rejected:", e));
+        }
+
+        // Potential fix: Some versions require an explicit "show" or "update"
+        if (typeof (_diceBox as any).show === 'function') (_diceBox as any).show();
+
         return;
       } catch (err) {
-        console.error("[DiceManager] DiceBox.roll() error:", err);
+        console.error("[DiceManager] DiceBox.roll() primary attempt failed:", err);
+        
+        // Secondary attempt: Fallback to basic notation if payload failed
+        try {
+          console.log("[DiceManager] Attempting fallback with notation:", notation);
+          _diceBox?.roll(notation);
+          return;
+        } catch (fallbackErr) {
+          console.error("[DiceManager] DiceBox.roll() fallback also failed:", fallbackErr);
+        }
+
         _pendingRolls.delete(rollId);
-        // Fall through to instantRoll
       }
     } else {
       console.warn("[DiceManager] No dice groups parsed from formula:", req.formula, "→ using instant roll");

@@ -641,6 +641,37 @@ export default function Home() {
           </div>
         </header>
 
+        {/* ──── NUCLEAR DEBUG OVERLAY ──── */}
+        <div className="fixed top-4 left-4 z-[100001] pointer-events-none flex flex-col gap-2">
+            <div className="bg-black/90 border border-white/10 p-3 rounded-xl backdrop-blur-md shadow-2xl pointer-events-auto">
+                <div className="text-[10px] font-black text-rose-500 mb-2 tracking-widest uppercase flex items-center justify-between gap-6">
+                    Diagnostic Dashboard
+                    <span className="text-gray-500">v7.6.9</span>
+                </div>
+                <div className="space-y-1.5 font-mono text-[9px]">
+                    <div className="flex justify-between gap-4">
+                        <span className="text-gray-500">Engine Status:</span>
+                        <span className={diceStatus === 'ready' ? 'text-green-400' : 'text-yellow-400'}>{diceStatus.toUpperCase()}</span>
+                    </div>
+                    {/* Access global diagnostics from manager if available */}
+                    <div className="flex justify-between gap-4">
+                        <span className="text-gray-500">Init Count:</span>
+                        <span className="text-white">{(typeof window !== 'undefined' && (window as any).__diceManager?.diag?.initCount) || 0}</span>
+                    </div>
+                </div>
+                <button 
+                    onClick={() => {
+                        if (typeof window !== 'undefined' && (window as any).__reinitDice) {
+                            (window as any).__reinitDice();
+                        }
+                    }}
+                    className="mt-3 w-full py-1.5 bg-rose-600/20 hover:bg-rose-600/40 border border-rose-600/40 text-rose-400 text-[8px] font-black rounded uppercase transition-colors"
+                >
+                    Force 3D Re-Init
+                </button>
+            </div>
+        </div>
+
         {showThemePicker && (
           <div className="fixed top-24 right-8 z-[100] bg-black/95 backdrop-blur-3xl border border-white/10 p-6 rounded-[2.5rem] shadow-2xl w-80 animate-in slide-in-from-top-4 duration-300">
              <h3 className="text-xs font-black text-rose-400 mb-4 tracking-widest uppercase">World Settings</h3>

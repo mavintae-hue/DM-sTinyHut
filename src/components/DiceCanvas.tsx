@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { registerDiceBox, setDiceTheme, setDiceInitStatus } from "@/lib/diceManager";
+import { useEffect, useRef, useState } from "react";
+import { registerDiceBox, setDiceTheme, setDiceInitStatus, destroyDiceBox } from "@/lib/diceManager";
 
 interface DiceCanvasProps {
   themeColor: string;
@@ -10,6 +10,17 @@ interface DiceCanvasProps {
 
 export default function DiceCanvas({ themeColor, diceTheme }: DiceCanvasProps) {
   const initAttempted = useRef(false);
+  const [reinitKey, setReinitKey] = useState(0);
+
+  // Expose re-init to window for the debug button
+  useEffect(() => {
+    (window as any).__reinitDice = () => {
+      console.log("[DiceCanvas] Manual RE-INIT triggered");
+      destroyDiceBox();
+      initAttempted.current = false;
+      setReinitKey(prev => prev + 1);
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -17,7 +28,7 @@ export default function DiceCanvas({ themeColor, diceTheme }: DiceCanvasProps) {
     initAttempted.current = true;
 
     const initDice = async () => {
-      console.log("[DiceCanvas] Starting DiceBox initialization...");
+      console.log("[DiceCanvas] Starting DiceBox initialization (Attempt " + reinitKey + ")...");
       setDiceInitStatus('loading');
 
       try {
@@ -70,7 +81,7 @@ export default function DiceCanvas({ themeColor, diceTheme }: DiceCanvasProps) {
           throw new Error("DiceBox constructor not found in module exports");
         }
 
-        // Standard constructor: (container_selector, options)
+        // Standard constructor
         const box = new (DiceBox as any)("#dice-box-root", {
           assetPath: "/dice-assets/", 
           theme: diceTheme,
@@ -99,36 +110,21 @@ export default function DiceCanvas({ themeColor, diceTheme }: DiceCanvasProps) {
             display: "block",
             pointerEvents: "none",
           });
-        } else {
-          console.warn("[DiceCanvas] DiceBox initialized but no canvas found in container!");
         }
 
         registerDiceBox(box);
         setDiceInitStatus('ready');
         console.log("[DiceCanvas] ✓ DiceBox ready and registered!");
 
-        // --- NEW: Dimension Enforcement Loop ---
+        // --- Dimension Enforcement Loop ---
         const enforceDimensions = () => {
           const cv = container?.querySelector("canvas");
           if (cv) {
             const w = window.innerWidth;
             const h = window.innerHeight;
             if (cv.width !== w || cv.height !== h) {
-              console.log(`[DiceCanvas] Reinforcing dimensions: ${w}x${h}`);
               cv.width = w;
               cv.height = h;
-              Object.assign(cv.style, {
-                width: '100vw',
-                height: '100vh',
-                position: 'fixed',
-                top: '0',
-                left: '0',
-                display: 'block',
-                visibility: 'visible',
-                opacity: '1',
-                zIndex: '100000',
-                pointerEvents: 'none'
-              });
             }
           }
         };
@@ -136,27 +132,22 @@ export default function DiceCanvas({ themeColor, diceTheme }: DiceCanvasProps) {
         const dimensionInterval = setInterval(enforceDimensions, 500);
         (box as any)._enforceInterval = dimensionInterval;
 
-      } catch (err) {
+      } catch (err: any) {
         console.error("[DiceCanvas] DiceBox init FAILED:", err);
         setDiceInitStatus('error');
-        // Allow retry on next mount
         initAttempted.current = false;
       }
     };
 
-    // Use a slight delay to ensure the body is ready in Next.js hydrate phase
     const timer = setTimeout(initDice, 100);
     return () => {
       clearTimeout(timer);
-      // Cleanup happens if we unmount, but the container stays in body
     };
-  }, [themeColor, diceTheme]);
+  }, [themeColor, diceTheme, reinitKey]);
 
-  // Sync theme/color to DiceBox whenever props change
   useEffect(() => {
     setDiceTheme(themeColor, diceTheme);
   }, [themeColor, diceTheme]);
 
-  // No rendered DOM in the React tree — container lives directly in document.body
   return null;
 }

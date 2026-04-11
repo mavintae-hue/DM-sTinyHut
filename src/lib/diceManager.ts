@@ -1,5 +1,6 @@
 import type { RollRequest, RollResult } from "@/hooks/useSupabaseRealtime";
 
+export type DiceStatus = 'idle' | 'loading' | 'ready' | 'error';
 type RollCompleteCallback = (result: Omit<RollResult, "timestamp">) => void;
 
 interface QueueItem {
@@ -10,7 +11,15 @@ interface QueueItem {
 
 let _diceBox: any = null;
 let _currentTheme = "default";
-let _initStatus: 'idle' | 'loading' | 'ready' | 'error' = 'idle';
+let _diceInitStatus: DiceStatus = 'idle';
+let _diceDiagnostics = {
+  canvasWidth: 0,
+  canvasHeight: 0,
+  lastError: null as string | null,
+  initCount: 0,
+  lastRollTimestamp: 0
+};
+
 const _pendingRolls = new Map<string, QueueItem>();
 
 // Predefined Style Palettes
@@ -21,22 +30,27 @@ const MECHANIC_COLORS = ["#71717a", "#52525b", "#3f3f46", "#27272a", "#d4d4d8"];
 /** Called by DiceCanvas once DiceBox is initialized */
 export function registerDiceBox(box: any) {
   if (!box) return;
+  console.log("[DiceManager] Registering DiceBox instance", box);
   _diceBox = box;
+  _diceDiagnostics.initCount++;
+  
+  // Track dimensions
+  if (box.canvas) {
+    _diceDiagnostics.canvasWidth = box.canvas.width;
+    _diceDiagnostics.canvasHeight = box.canvas.height;
+  }
+
   (window as any).__diceManager = {
     get box() { return _diceBox; },
-    get pending() { return _pendingRolls; }
+    get pending() { return _pendingRolls; },
+    get diag() { return _diceDiagnostics; }
   };
 
   box.onRollComplete = (results: any) => {
-    // dice-box result contains the 'id' (or 'groupId' depends on version/usage)
-    // We try to find our roll in _pendingRolls using any of the dice results
     const rollId = results[0]?.groupId || results[0]?.id;
     const item = _pendingRolls.get(rollId);
     
     if (!item) {
-        // If we can't find the roll ID, it might be a peer roll or an older ID format.
-        // We'll just do a safety clear after a while but don't return early if it's our own.
-        // For now, let's log it for debugging
         console.log("[DiceManager] Result received for unknown ID:", rollId);
         setTimeout(() => { try { _diceBox?.clear(); } catch (_) {} }, 2500);
         return;
@@ -50,12 +64,10 @@ export function registerDiceBox(box: any) {
 
     if (Array.isArray(results)) {
       results.forEach((group: any) => {
-          // If we are getting an array of individual dice
           if (group.value !== undefined) {
               totalFromDice += group.value;
               rolls.push(group.value);
           } 
-          // If we are getting an array of groups (older versions/different configs)
           else if (group.rolls) {
               group.rolls.forEach((r: any) => {
                   totalFromDice += r.value;
@@ -76,7 +88,6 @@ export function registerDiceBox(box: any) {
       finalTotal = chosenDie + req.modifier;
     }
 
-    // Natural 20/1 only applies to d20 hit/skill/save rolls
     const isD20 = req.formula.toLowerCase().includes("d20") || req.rollType.startsWith("hit_");
     const isNat20 = isD20 && chosenDie === 20;
     const isNat1  = isD20 && chosenDie === 1;
@@ -89,23 +100,34 @@ export function registerDiceBox(box: any) {
       resultDetails: { rolls, modifier: req.modifier, formula: req.formula, isNat20, isNat1 },
     });
 
-    // Clear dice from screen after 2.5s
     setTimeout(() => {
       try { _diceBox?.clear(); } catch (_) {}
     }, 2500);
   };
 
-  _initStatus = 'ready';
+  _diceInitStatus = 'ready';
   console.log("[DiceManager] DiceBox registered and ready ✓");
 }
 
-export function setDiceInitStatus(status: 'idle' | 'loading' | 'ready' | 'error') {
-  _initStatus = status;
-}
+export const setDiceInitStatus = (status: DiceStatus) => {
+  _diceInitStatus = status;
+};
 
-export function getDiceInitStatus() {
-  return _initStatus;
-}
+export const getDiceInitStatus = () => _diceInitStatus;
+export const getDiceDiagnostics = () => _diceDiagnostics;
+
+export const destroyDiceBox = () => {
+    if (_diceBox) {
+        console.log("[DiceManager] Destroying DiceBox instance...");
+        try {
+            if (typeof _diceBox.clear === 'function') _diceBox.clear();
+            _diceBox = null;
+            _diceInitStatus = 'idle';
+        } catch (e) {
+            console.error("[DiceManager] Error during destruction:", e);
+        }
+    }
+};
 
 /** Update dice theme or color globally */
 export function setDiceTheme(color: string, theme: string = "default") {
@@ -161,18 +183,17 @@ export function rollDice(
   onComplete: RollCompleteCallback,
   overrideTheme?: string
 ) {
+  _diceDiagnostics.lastRollTimestamp = Date.now();
+
   if (_diceBox) {
     const style = req.themeColor || "#9b111e";
     const theme = overrideTheme || req.diceTheme || _currentTheme;
     
-    // Always convert adv/disadv to clean "2d20" — ignore any formula modifier notation
     let notation = req.formula;
     if (req.rollType === "hit_adv" || req.rollType === "hit_disadv") {
       notation = "2d20";
     }
 
-    // Extract dice groups from formula — handle negative modifiers by splitting on + and -
-    // Strip any keep-notation (kh1, kl1) and similar modifiers first
     const cleanNotation = notation.replace(/k[hl]\d+/gi, "");
     const groups = cleanNotation.split(/(?=[+-])/).map(s => s.trim()).filter(s => /\d*d\d+/i.test(s));
 
@@ -209,44 +230,41 @@ export function rollDice(
 
         console.log("[DiceManager] Rolling payload:", JSON.stringify(rollArray));
         
-        // Double check DiceBox instance
         if (!_diceBox || typeof _diceBox.roll !== 'function') {
            throw new Error("DiceBox instance is corrupted or roll method missing");
         }
 
-        // Primary attempt: structured payload
         const result = _diceBox.roll(rollArray);
-        
-        // If it's a promise, we can track it (though we don't await to avoid blocking)
         if (result instanceof Promise) {
-            result.catch(e => console.error("[DiceBox] Roll Promise rejected:", e));
+            result.catch(e => {
+              console.error("[DiceBox] Roll Promise rejected:", e);
+              _diceDiagnostics.lastError = e?.message || "Roll rejected";
+            });
         }
 
-        // Potential fix: Some versions require an explicit "show" or "update"
         if (typeof (_diceBox as any).show === 'function') (_diceBox as any).show();
-
         return;
-      } catch (err) {
-        console.error("[DiceManager] DiceBox.roll() primary attempt failed:", err);
+      } catch (err: any) {
+        console.error("[DiceManager] DiceBox.roll() Primary attempt failed:", err);
+        _diceDiagnostics.lastError = err?.message || "Primary roll failed";
         
-        // Secondary attempt: Fallback to basic notation if payload failed
         try {
           console.log("[DiceManager] Attempting fallback with notation:", notation);
           _diceBox?.roll(notation);
           return;
-        } catch (fallbackErr) {
-          console.error("[DiceManager] DiceBox.roll() fallback also failed:", fallbackErr);
+        } catch (fallbackErr: any) {
+          console.error("[DiceManager] DiceBox.roll() fallback FAILED:", fallbackErr);
+          _diceDiagnostics.lastError = fallbackErr?.message || "Fallback roll failed";
         }
 
         _pendingRolls.delete(rollId);
       }
     } else {
-      console.warn("[DiceManager] No dice groups parsed from formula:", req.formula, "→ using instant roll");
+      console.warn("[DiceManager] No dice groups parsed from formula:", req.formula);
     }
   } else {
-    console.log("[DiceManager] DiceBox not ready, using instant roll for:", req.actionName);
+    console.log("[DiceManager] DiceBox not ready, using instant roll");
   }
 
-  // Always fallback to instant JS roll if 3D dice isn't ready or fails
   instantRoll(req, onComplete);
 }

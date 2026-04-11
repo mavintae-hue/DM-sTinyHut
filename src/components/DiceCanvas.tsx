@@ -50,7 +50,7 @@ export default function DiceCanvas({ themeColor, diceTheme }: DiceCanvasProps) {
 
         // Standard constructor: (container_selector, options)
         const box = new (DiceBox as any)("#dice-box-root", {
-          assetPath: "/dice-assets", 
+          assetPath: "/dice-assets/", 
           theme: diceTheme,
           themeColor,
           scale: 5,
@@ -59,7 +59,13 @@ export default function DiceCanvas({ themeColor, diceTheme }: DiceCanvasProps) {
           throwForce: 10,
         });
 
-        await box.init();
+        // Initialize with a timeout to prevent infinite "LOADING" state
+        const initPromise = box.init();
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("DiceBox initialization timed out after 15s")), 15000)
+        );
+
+        await Promise.race([initPromise, timeoutPromise]);
 
         // Style the resulting canvas directly
         const canvas = container!.querySelector("canvas");

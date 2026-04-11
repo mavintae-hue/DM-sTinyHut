@@ -107,6 +107,35 @@ export default function DiceCanvas({ themeColor, diceTheme }: DiceCanvasProps) {
         setDiceInitStatus('ready');
         console.log("[DiceCanvas] ✓ DiceBox ready and registered!");
 
+        // --- NEW: Dimension Enforcement Loop ---
+        const enforceDimensions = () => {
+          const cv = container?.querySelector("canvas");
+          if (cv) {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            if (cv.width !== w || cv.height !== h) {
+              console.log(`[DiceCanvas] Reinforcing dimensions: ${w}x${h}`);
+              cv.width = w;
+              cv.height = h;
+              Object.assign(cv.style, {
+                width: '100vw',
+                height: '100vh',
+                position: 'fixed',
+                top: '0',
+                left: '0',
+                display: 'block',
+                visibility: 'visible',
+                opacity: '1',
+                zIndex: '100000',
+                pointerEvents: 'none'
+              });
+            }
+          }
+        };
+
+        const dimensionInterval = setInterval(enforceDimensions, 500);
+        (box as any)._enforceInterval = dimensionInterval;
+
       } catch (err) {
         console.error("[DiceCanvas] DiceBox init FAILED:", err);
         setDiceInitStatus('error');
@@ -117,7 +146,10 @@ export default function DiceCanvas({ themeColor, diceTheme }: DiceCanvasProps) {
 
     // Use a slight delay to ensure the body is ready in Next.js hydrate phase
     const timer = setTimeout(initDice, 100);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      // Cleanup happens if we unmount, but the container stays in body
+    };
   }, [themeColor, diceTheme]);
 
   // Sync theme/color to DiceBox whenever props change

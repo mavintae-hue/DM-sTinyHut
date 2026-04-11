@@ -606,28 +606,6 @@ export default function Home() {
                 3D: {diceStatus === 'ready' ? 'READY' : diceStatus === 'loading' ? 'LOADING' : diceStatus === 'error' ? 'INIT ERROR' : 'IDLE'}
               </span>
 
-              {diceStatus === 'ready' && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    console.log("[DEBUG] Triggering manual test roll...");
-                    rollDice({
-                      playerName: realm?.name || "Tester",
-                      actionName: "DEBUG TEST ROLL",
-                      formula: "1d20",
-                      modifier: 0,
-                      rollType: "action"
-                    }, () => "Debug User", (res) => {
-                      console.log("[DEBUG] Test roll result:", res.resultTotal);
-                      addLog(`DEBUG TEST: ${res.resultTotal}`);
-                    });
-                  }}
-                  className="ml-2 pl-2 border-l border-white/20 text-[8px] font-black text-white/40 hover:text-white transition-colors uppercase"
-                >
-                  Force Test
-                </button>
-              )}
-
               {/* Tooltip on hover */}
               <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-black/95 text-[8px] font-black p-3 rounded-xl border border-white/10 pointer-events-none z-[100] shadow-2xl">
                 {diceStatus === 'ready' && "PHYSICS ENGINE ACTIVE - DICE WILL ROLL"}
@@ -636,6 +614,28 @@ export default function Home() {
                 {diceStatus === 'idle' && "WAITING FOR ENGINE INITIALIZATION..."}
               </div>
             </div>
+
+            {diceStatus === 'ready' && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  console.log("[DEBUG] Manual 3D test triggered...");
+                  rollDice({
+                    playerName: playerName || "Tester",
+                    actionName: "DEBUG ROLL",
+                    formula: "1d20",
+                    modifier: 0,
+                    rollType: "custom"
+                  }, () => playerName, (res) => {
+                    console.log("[DEBUG] Result:", res.resultTotal);
+                    saveRollResult({ ...res, resultDetails: { ...res.resultDetails, player_avatar: playerAvatar } });
+                  });
+                }}
+                className="px-4 py-2 bg-gold text-darker text-[10px] font-black rounded-lg hover:brightness-110 active:scale-95 transition-all shadow-[0_0_20px_rgba(236,201,75,0.3)] border border-gold/50 z-50 animate-bounce"
+              >
+                3D DEBUG ROLL
+              </button>
+            )}
             <button onClick={() => setShowThemePicker(!showThemePicker)} className="p-2.5 bg-white/5 rounded-xl hover:bg-white/10 transition-colors border border-white/5"><Paintbrush className="w-5 h-5" /></button>
             <button onClick={() => setShowColorPicker(!showColorPicker)} className="p-2.5 bg-white/5 rounded-xl hover:bg-white/10 transition-colors border border-white/5"><Palette className="w-5 h-5" /></button>
           </div>

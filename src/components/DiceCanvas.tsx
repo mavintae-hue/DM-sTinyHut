@@ -50,12 +50,11 @@ export default function DiceCanvas({ themeColor, diceTheme }: DiceCanvasProps) {
 
         // Standard constructor: (container_selector, options)
         const box = new (DiceBox as any)("#dice-box-root", {
-          assetPath: "/dice-assets/", 
+          assetPath: "/dice-assets", 
           theme: diceTheme,
           themeColor,
-          scale: 9,
+          scale: 5,
           gravity: 1.5,
-          startingHeight: 25,
           spinForce: 15,
           throwForce: 10,
         });

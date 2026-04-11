@@ -202,7 +202,7 @@ export function rollDice(
                     themeColor: color,
                     theme,
                     groupId: rollId,
-                    id: rollId
+                    id: `${rollId}_${i}`
                 });
             }
         });

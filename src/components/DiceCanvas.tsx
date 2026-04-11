@@ -1,46 +1,45 @@
 "use client";
 
-import { useEffect } from "react";
-import { registerDiceBox, setDiceTheme } from "@/lib/diceManager";
+import { useEffect, useRef } from "react";
+import { registerDiceBox, setDiceTheme, setDiceInitStatus } from "@/lib/diceManager";
 
 interface DiceCanvasProps {
   themeColor: string;
   diceTheme: string;
 }
 
-// Module-level guard — DiceBox is a heavy singleton, only init once per page load
-let _boxInitialized = false;
-let _boxInitializing = false;
-
 export default function DiceCanvas({ themeColor, diceTheme }: DiceCanvasProps) {
+  const initAttempted = useRef(false);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (_boxInitialized || _boxInitializing) return;
-    _boxInitializing = true;
-
-    // Inject container directly into body so it's guaranteed to exist
-    // and is NOT inside any React-managed subtree that could unmount
-    let container = document.getElementById("dice-box-root");
-    if (!container) {
-      container = document.createElement("div");
-      container.id = "dice-box-root";
-      Object.assign(container.style, {
-        position: "fixed",
-        top: "0",
-        left: "0",
-        width: "100vw",
-        height: "100vh",
-        pointerEvents: "none",
-        zIndex: "500",
-        overflow: "visible",
-        background: "transparent",
-      });
-      document.body.appendChild(container);
-      console.log("[DiceCanvas] Injected #dice-box-root into body");
-    }
+    if (initAttempted.current) return;
+    initAttempted.current = true;
 
     const initDice = async () => {
       console.log("[DiceCanvas] Starting DiceBox initialization...");
+      setDiceInitStatus('loading');
+
+      // Inject container directly into body so it's guaranteed to exist
+      let container = document.getElementById("dice-box-root");
+      if (!container) {
+        container = document.createElement("div");
+        container.id = "dice-box-root";
+        Object.assign(container.style, {
+          position: "fixed",
+          top: "0",
+          left: "0",
+          width: "100vw",
+          height: "100vh",
+          pointerEvents: "none",
+          zIndex: "500",
+          overflow: "visible",
+          background: "transparent",
+        });
+        document.body.appendChild(container);
+        console.log("[DiceCanvas] Injected #dice-box-root into body");
+      }
+
       try {
         const mod = await import("@3d-dice/dice-box");
         const DiceBox = mod.default || mod;
@@ -75,19 +74,20 @@ export default function DiceCanvas({ themeColor, diceTheme }: DiceCanvasProps) {
         }
 
         registerDiceBox(box);
-        _boxInitialized = true;
-        _boxInitializing = false;
-        (window as any).__diceBox = box;
+        setDiceInitStatus('ready');
         console.log("[DiceCanvas] ✓ DiceBox ready and registered!");
 
       } catch (err) {
         console.error("[DiceCanvas] DiceBox init FAILED:", err);
-        _boxInitializing = false;
+        setDiceInitStatus('error');
+        // Allow retry on next mount
+        initAttempted.current = false;
       }
     };
 
-    initDice();
-    return () => {};
+    // Use a slight delay to ensure the body is ready in Next.js hydrate phase
+    const timer = setTimeout(initDice, 100);
+    return () => clearTimeout(timer);
   }, []);
 
   // Sync theme/color to DiceBox whenever props change

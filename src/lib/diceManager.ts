@@ -10,6 +10,7 @@ interface QueueItem {
 
 let _diceBox: any = null;
 let _currentTheme = "default";
+let _initStatus: 'idle' | 'loading' | 'ready' | 'error' = 'idle';
 const _pendingRolls = new Map<string, QueueItem>();
 
 // Predefined Style Palettes
@@ -94,7 +95,16 @@ export function registerDiceBox(box: any) {
     }, 2500);
   };
 
+  _initStatus = 'ready';
   console.log("[DiceManager] DiceBox registered and ready ✓");
+}
+
+export function setDiceInitStatus(status: 'idle' | 'loading' | 'ready' | 'error') {
+  _initStatus = status;
+}
+
+export function getDiceInitStatus() {
+  return _initStatus;
 }
 
 /** Update dice theme or color globally */

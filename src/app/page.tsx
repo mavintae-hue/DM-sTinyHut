@@ -10,7 +10,7 @@ import BeyondDashboard from "@/components/character-sheet/BeyondDashboard";
 // Load DiceCanvas dynamically to prevent SSR issues with the 3D physics engine
 const DiceCanvas = dynamic(() => import("@/components/DiceCanvas"), { ssr: false });
 import { useSupabaseRealtime, RollRequest } from "@/hooks/useSupabaseRealtime";
-import { rollDice, setDiceTheme } from "@/lib/diceManager";
+import { rollDice, setDiceTheme, getDiceInitStatus } from "@/lib/diceManager";
 import { LogIn, Users, Trash2, Palette, UserPlus, ChevronLeft, Paintbrush, Globe, Sparkles } from "lucide-react";
 
 export const DICE_COLORS = [
@@ -83,6 +83,7 @@ export default function Home() {
   const [splashAnimation, setSplashAnimation] = useState<{ type: "crit" | "fail", message: string, playerName?: string, playerAvatar?: string | null } | null>(null);
   const lastProcessedLogTimestamp = useRef<string | null>(null);
   const [showRollLog, setShowRollLog] = useState(true);
+  const [diceStatus, setDiceStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
 
   const [roomId, setRoomId] = useState("");
   const [roomUuid, setRoomUuid] = useState<string | null>(null);
@@ -417,6 +418,15 @@ export default function Home() {
   };
 
   useEffect(() => {
+    const checkStatus = () => {
+      const current = getDiceInitStatus();
+      if (current !== diceStatus) setDiceStatus(current);
+    };
+    const interval = setInterval(checkStatus, 1500);
+    return () => clearInterval(interval);
+  }, [diceStatus]);
+
+  useEffect(() => {
     if (logs.length > 0) {
       const latestLog = logs[0];
       if (latestLog.timestamp !== lastProcessedLogTimestamp.current) {
@@ -578,6 +588,17 @@ export default function Home() {
               <span className="hidden sm:inline">LOG</span>
               {logs.length > 0 && <span className="bg-gold text-darker rounded-full w-4 h-4 text-[10px] flex items-center justify-center font-black">{logs.length > 9 ? '9+' : logs.length}</span>}
             </button>
+            <div 
+              className={`w-3 h-3 rounded-full shadow-[0_0_10px_rgba(255,255,255,0.2)] flex-shrink-0 relative group`}
+              style={{ 
+                backgroundColor: diceStatus === 'ready' ? '#48BB78' : diceStatus === 'loading' ? '#ECC94B' : diceStatus === 'error' ? '#F56565' : '#4A5568' 
+              }}
+            >
+              <div className="absolute bottom-full right-0 mb-2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-black/90 text-[8px] font-black p-2 rounded-lg border border-white/10 pointer-events-none">
+                3D ENGINE: {diceStatus.toUpperCase()}
+              </div>
+              {diceStatus === 'loading' && <div className="absolute inset-0 rounded-full border border-yellow-400 animate-ping opacity-50"></div>}
+            </div>
             <button onClick={() => setShowThemePicker(!showThemePicker)} className="p-2.5 bg-white/5 rounded-xl hover:bg-white/10 transition-colors border border-white/5"><Paintbrush className="w-5 h-5" /></button>
             <button onClick={() => setShowColorPicker(!showColorPicker)} className="p-2.5 bg-white/5 rounded-xl hover:bg-white/10 transition-colors border border-white/5"><Palette className="w-5 h-5" /></button>
           </div>

@@ -29,7 +29,7 @@ export default function DiceCanvas({ themeColor, diceTheme }: DiceCanvasProps) {
         }
 
         // Standard constructor targeting our JSX container
-        const box = new (DiceBox as any)("#dice-box-app-root", {
+        const box = new (DiceBox as any)("#dice-box", {
           assetPath: "/dice-assets/", 
           theme: diceTheme,
           themeColor: themeColor,
@@ -64,7 +64,7 @@ export default function DiceCanvas({ themeColor, diceTheme }: DiceCanvasProps) {
   // Standard React rendering for the container
   return (
     <div 
-      id="dice-box-app-root" 
+      id="dice-box" 
       className="fixed inset-0 z-[100000] pointer-events-none w-screen h-screen overflow-hidden" 
       style={{ position: 'fixed', top: 0, left: 0, background: 'transparent' }}
     />

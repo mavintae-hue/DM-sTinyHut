@@ -104,16 +104,10 @@ export default function Home() {
   const [savedRooms, setSavedRooms] = useState<{ id: string, name: string }[]>([]);
 
   // Realtime hook — always pass roomUuid so channel connects as soon as room is known
-  const { logs, sendRollRequest, saveRollResult, activePlayers } = useSupabaseRealtime(
+  const { logs, saveRollResult, activePlayers } = useSupabaseRealtime(
     roomUuid || "",
     playerName,
-    playerAvatar,
-    (req) => {
-        // Only roll if it's from someone else
-        if (req.playerName !== playerName) {
-            rollDice(req, () => req.playerName, () => {}, req.diceTheme);
-        }
-    }
+    playerAvatar
   );
 
   const fetchMetadata = useCallback(async () => {
@@ -342,15 +336,11 @@ export default function Home() {
       () => playerName,
       (res) => saveRollResult({ ...res, resultDetails: { ...res.resultDetails, player_avatar: playerAvatar } })
     );
-
-    // Broadcast so other players in the realm see the dice roll too
-    sendRollRequest(request);
   };
 
   const handleQuickRoll = (request: RollRequest) => {
     const req = { ...request, themeColor, diceTheme };
     rollDice(req, () => playerName, (res) => saveRollResult({ ...res, resultDetails: { ...res.resultDetails, player_avatar: playerAvatar } }));
-    sendRollRequest(req);
   };
 
   const handleUpdateHp = async (current: number) => {

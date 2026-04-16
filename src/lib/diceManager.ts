@@ -26,21 +26,23 @@ export function registerDiceBox(box: any) {
     // We will find the rollId from the results
     const rollId = results[0]?.groupId || results[0]?.id || "unknown";
     
-    // In our bare-bones version, we pass the basic notation. 
-    // If we can't find tracking info, we'll try to match by grabbing the only pending roll.
     let item = _pendingRolls.get(rollId);
     
-    // Fallback: If only one roll is pending, assume this is it
-    if (!item && _pendingRolls.size === 1) {
-      const firstEntry = Array.from(_pendingRolls.entries())[0];
-      item = firstEntry[1];
-      _pendingRolls.delete(firstEntry[0]);
-    } else {
+    // Fallback: If exact ID not found, just grab the most recently added pending roll
+    if (!item && _pendingRolls.size > 0) {
+      // Get the last entry in the Map (most recent)
+      const entries = Array.from(_pendingRolls.entries());
+      const lastEntry = entries[entries.length - 1];
+      item = lastEntry[1];
+      
+      // Clear the map so it doesn't grow infinitely with stale rolls
+      _pendingRolls.clear();
+    } else if (item) {
       _pendingRolls.delete(rollId);
     }
     
     if (!item) {
-        console.warn("[DiceManager] Result received but unmatched to a pending request.");
+        console.warn("[DiceManager] Result received but unmatched to a pending request (size 0).");
         setTimeout(() => { try { _diceBox?.clear(); } catch (_) {} }, 2500);
         return;
     }

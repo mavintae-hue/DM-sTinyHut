@@ -120,11 +120,20 @@ export default function DiceCanvas({ themeColor, diceTheme }: DiceCanvasProps) {
         const enforceDimensions = () => {
           const cv = container?.querySelector("canvas");
           if (cv) {
-            const w = window.innerWidth;
-            const h = window.innerHeight;
-            if (cv.width !== w || cv.height !== h) {
-              cv.width = w;
-              cv.height = h;
+            // ONLY enforce CSS styles. Setting cv.width or cv.height wipes the WebGL frame buffer!
+            if (cv.style.width !== '100vw' || cv.style.height !== '100vh') {
+               Object.assign(cv.style, {
+                  width: '100vw',
+                  height: '100vh',
+                  position: 'fixed',
+                  top: '0',
+                  left: '0',
+                  display: 'block',
+                  visibility: 'visible',
+                  opacity: '1',
+                  zIndex: '100000',
+                  pointerEvents: 'none'
+               });
             }
           }
         };

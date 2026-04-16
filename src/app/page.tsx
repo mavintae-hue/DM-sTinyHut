@@ -615,62 +615,10 @@ export default function Home() {
               </div>
             </div>
 
-            {diceStatus === 'ready' && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  console.log("[DEBUG] Manual 3D test triggered...");
-                  rollDice({
-                    playerName: playerName || "Tester",
-                    actionName: "DEBUG ROLL",
-                    formula: "1d20",
-                    modifier: 0,
-                    rollType: "custom"
-                  }, () => playerName, (res) => {
-                    console.log("[DEBUG] Result:", res.resultTotal);
-                    saveRollResult({ ...res, resultDetails: { ...res.resultDetails, player_avatar: playerAvatar } });
-                  });
-                }}
-                className="px-4 py-2 bg-gold text-darker text-[10px] font-black rounded-lg hover:brightness-110 active:scale-95 transition-all shadow-[0_0_20px_rgba(236,201,75,0.3)] border border-gold/50 z-50 animate-bounce"
-              >
-                3D DEBUG ROLL
-              </button>
-            )}
             <button onClick={() => setShowThemePicker(!showThemePicker)} className="p-2.5 bg-white/5 rounded-xl hover:bg-white/10 transition-colors border border-white/5"><Paintbrush className="w-5 h-5" /></button>
             <button onClick={() => setShowColorPicker(!showColorPicker)} className="p-2.5 bg-white/5 rounded-xl hover:bg-white/10 transition-colors border border-white/5"><Palette className="w-5 h-5" /></button>
           </div>
         </header>
-
-        {/* ──── NUCLEAR DEBUG OVERLAY ──── */}
-        <div className="fixed top-4 left-4 z-[100001] pointer-events-none flex flex-col gap-2">
-            <div className="bg-black/90 border border-white/10 p-3 rounded-xl backdrop-blur-md shadow-2xl pointer-events-auto">
-                <div className="text-[10px] font-black text-rose-500 mb-2 tracking-widest uppercase flex items-center justify-between gap-6">
-                    Diagnostic Dashboard
-                    <span className="text-gray-500">v7.6.9</span>
-                </div>
-                <div className="space-y-1.5 font-mono text-[9px]">
-                    <div className="flex justify-between gap-4">
-                        <span className="text-gray-500">Engine Status:</span>
-                        <span className={diceStatus === 'ready' ? 'text-green-400' : 'text-yellow-400'}>{diceStatus.toUpperCase()}</span>
-                    </div>
-                    {/* Access global diagnostics from manager if available */}
-                    <div className="flex justify-between gap-4">
-                        <span className="text-gray-500">Init Count:</span>
-                        <span className="text-white">{(typeof window !== 'undefined' && (window as any).__diceManager?.diag?.initCount) || 0}</span>
-                    </div>
-                </div>
-                <button 
-                    onClick={() => {
-                        if (typeof window !== 'undefined' && (window as any).__reinitDice) {
-                            (window as any).__reinitDice();
-                        }
-                    }}
-                    className="mt-3 w-full py-1.5 bg-rose-600/20 hover:bg-rose-600/40 border border-rose-600/40 text-rose-400 text-[8px] font-black rounded uppercase transition-colors"
-                >
-                    Force 3D Re-Init
-                </button>
-            </div>
-        </div>
 
         {showThemePicker && (
           <div className="fixed top-24 right-8 z-[100] bg-black/95 backdrop-blur-3xl border border-white/10 p-6 rounded-[2.5rem] shadow-2xl w-80 animate-in slide-in-from-top-4 duration-300">

@@ -137,7 +137,19 @@ export function useSupabaseRealtime(
             resultDetails: newDoc.result_details,
             timestamp: newDoc.created_at,
           };
-          setLogs((prevLogs) => [newLog, ...prevLogs]);
+          
+          setLogs((prevLogs) => {
+            // Deduplicate: If an optimistic local log exists within ~5 seconds with the same exact values, skip it.
+            const isDuplicate = prevLogs.some(log => 
+              log.playerName === newLog.playerName &&
+              log.actionName === newLog.actionName &&
+              log.resultTotal === newLog.resultTotal &&
+              Math.abs(new Date(log.timestamp).getTime() - new Date(newLog.timestamp).getTime()) < 5000
+            );
+            
+            if (isDuplicate) return prevLogs;
+            return [newLog, ...prevLogs];
+          });
         }
       )
       .subscribe(async (status, err) => {
@@ -184,6 +196,13 @@ export function useSupabaseRealtime(
     }
 
     console.log("[Realtime] Saving roll for room:", currentRoomId, "| action:", result.actionName);
+
+    // OPTIMISTIC UPDATE: Instantly show on local UI
+    const optimisticLog: RollResult = {
+      ...result,
+      timestamp: new Date().toISOString()
+    };
+    setLogs((prevLogs) => [optimisticLog, ...prevLogs]);
 
     const { error } = await supabase.from("rolls_history").insert({
       room_id: currentRoomId,

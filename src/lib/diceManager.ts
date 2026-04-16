@@ -170,19 +170,28 @@ export function rollDice(
     }
 
     const cleanNotation = notation.replace(/k[hl]\d+/gi, "");
+    
+    // Parse into an array of dice groups (e.g. "1d8 + 3d12" -> ["1d8", "3d12"])
+    const diceGroups = cleanNotation.match(/(?:\d+)?d\d+/gi) || [];
+
+    if (diceGroups.length === 0) {
+       console.warn("[DiceManager] No valid dice found in formula:", req.formula);
+       instantRoll(req, onComplete);
+       return;
+    }
 
     // Using the simplest form of calling the 3D dice engine
     const rollId = `roll_${Date.now()}`;
     _pendingRolls.set(rollId, { req, getPlayerName, onComplete });
 
     try {
-      console.log(`[DiceManager] Rolling '${cleanNotation}' with theme: ${theme}`);
+      console.log(`[DiceManager] Rolling groups:`, diceGroups, `with theme: ${theme}`);
       
       // We pass the config to ensure the colors are updated before the roll
       _diceBox.updateConfig({ theme, themeColor: style }); 
 
-      // Native, simplest call to `@3d-dice/dice-box` Roll method:
-      const result = _diceBox.roll(cleanNotation);
+      // Array of strings triggers multi-dice rolls in @3d-dice/dice-box
+      const result = _diceBox.roll(diceGroups);
       
       if (result instanceof Promise) {
           result.catch(e => console.error("[DiceBox] Roll Promise rejected:", e));

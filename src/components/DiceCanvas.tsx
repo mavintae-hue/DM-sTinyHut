@@ -16,21 +16,25 @@ export default function DiceCanvas({ themeColor, diceTheme }: DiceCanvasProps) {
 
     let cancelled = false;
 
+    // IMPORTANT: Signal 'loading' immediately when settings change
+    // This prevents rollDice from trying to use the old box during the 150ms transition.
+    console.log(`[DiceCanvas] Theme/Color changed. Resetting engine...`);
+    setDiceInitStatus('loading');
+    destroyDiceBox();
+
     const initDice = async () => {
-      // Destroy existing box before reinitializing (theme/color change)
+      // Destroy existing box before reinitializing
       if (boxRef.current) {
         try {
           boxRef.current.clearDice?.();
-          // Remove the canvas Three.js appended into #dice-box
           const container = document.getElementById("dice-box");
           if (container) container.innerHTML = "";
         } catch (_) {}
         boxRef.current = null;
-        destroyDiceBox();
       }
 
+      if (cancelled) return;
       console.log(`[DiceCanvas] Initializing with theme="${diceTheme}" color="${themeColor}"`);
-      setDiceInitStatus('loading');
 
       try {
         const mod = await import("@3d-dice/dice-box-threejs");

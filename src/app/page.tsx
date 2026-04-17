@@ -10,7 +10,7 @@ import BeyondDashboard from "@/components/character-sheet/BeyondDashboard";
 // Load DiceCanvas dynamically to prevent SSR issues with the 3D physics engine
 const DiceCanvas = dynamic(() => import("@/components/DiceCanvas"), { ssr: false });
 import { useSupabaseRealtime, RollRequest } from "@/hooks/useSupabaseRealtime";
-import { rollDice, setDiceTheme, getDiceInitStatus, generateDeterministicRoll } from "@/lib/diceManager";
+import { rollDice, setDiceTheme, getDiceInitStatus, setDiceInitStatus, destroyDiceBox, generateDeterministicRoll } from "@/lib/diceManager";
 import { LogIn, Users, Trash2, Palette, UserPlus, ChevronLeft, Paintbrush, Globe, Sparkles } from "lucide-react";
 
 export const DICE_COLORS = [
@@ -122,22 +122,26 @@ export default function Home() {
     (req) => {
         // Only trigger the 3D visual roll if it's from someone else.
         if (req.playerName !== playerName) {
+            // BLOCK immediately! This prevents the viewer from rolling with the WRONG theme
+            // during the half-second it takes for the new DiceCanvas to mount and initialize.
+            setDiceInitStatus('loading');
+            destroyDiceBox();
+
             // Apply the roller's theme temporarily
             if (req.themeColor) setDisplayThemeColor(req.themeColor);
             if (req.diceTheme) setDisplayDiceTheme(req.diceTheme);
 
-            // Wait a tiny bit for the DiceCanvas to potentially trigger a re-init if it's a new theme
-            // Then roll the dice. rollDice handles the queueing.
+            // Wait for the DiceCanvas to re-init (which calls registerDiceBox back to 'ready')
             setTimeout(() => {
                 rollDice(req, () => req.playerName, () => {});
-            }, 100);
+            }, 350); // Increased delay for slower networks/browsers
 
-            // Set a timer to revert back to the user's preferred settings after 8 seconds
+            // Set a timer to revert back to the user's preferred settings after 12 seconds
             if (themeRevertTimer.current) clearTimeout(themeRevertTimer.current);
             themeRevertTimer.current = setTimeout(() => {
                 setDisplayThemeColor(themeColor);
                 setDisplayDiceTheme(diceTheme);
-            }, 8000);
+            }, 12000); // 12s total (more time for complex multi-dice sequences)
         }
     }
   );
@@ -364,6 +368,11 @@ export default function Home() {
       diceTheme: diceTheme || 'default',
     };
 
+    // Ensure local display matches current selection immediately
+    setDisplayThemeColor(themeColor || '#9b111e');
+    setDisplayDiceTheme(diceTheme || 'default');
+    if (themeRevertTimer.current) clearTimeout(themeRevertTimer.current);
+
     // GENERATE DETERMINISTIC VALUES ONCE
     request.forcedNotations = generateDeterministicRoll(request);
 
@@ -380,6 +389,11 @@ export default function Home() {
 
   const handleQuickRoll = (request: RollRequest) => {
     const req = { ...request, themeColor, diceTheme };
+    
+    // Ensure local display matches current selection immediately
+    setDisplayThemeColor(themeColor || '#9b111e');
+    setDisplayDiceTheme(diceTheme || 'default');
+    if (themeRevertTimer.current) clearTimeout(themeRevertTimer.current);
     
     // GENERATE DETERMINISTIC VALUES ONCE
     req.forcedNotations = generateDeterministicRoll(req);

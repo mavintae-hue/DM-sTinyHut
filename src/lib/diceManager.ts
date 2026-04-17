@@ -11,14 +11,16 @@ interface QueueItem {
 
 let _diceBox: any = null;
 let _diceInitStatus: DiceStatus = 'idle';
+let _isJustInitialized = false;
 const _pendingRolls = new Map<string, QueueItem>();
 
 /** Destroy the current DiceBox instance (called before reinitializing) */
 export function destroyDiceBox() {
   _diceBox = null;
-  _diceInitStatus = 'idle';
+  _diceInitStatus = 'loading'; // Signal that we are waiting for a new one
+  _isJustInitialized = false;
   _pendingRolls.clear();
-  console.log("[DiceManager] DiceBox destroyed");
+  console.log("[DiceManager] DiceBox reference cleared, status set to loading");
 }
 
 /** Called by DiceCanvas once DiceBox is initialized */
@@ -31,12 +33,13 @@ export function registerDiceBox(box: any) {
   box.onRollComplete = (result: any) => {
     console.log("[DiceManager] onRollComplete fired:", result);
 
-    // Grab the first (and only) pending roll
+    // Grab the first pending roll (FIFO)
     let item: QueueItem | undefined;
     if (_pendingRolls.size > 0) {
       const entries = Array.from(_pendingRolls.entries());
-      item = entries[entries.length - 1][1];
-      _pendingRolls.clear();
+      const [key, firstItem] = entries[0];
+      item = firstItem;
+      _pendingRolls.delete(key);
     }
 
     if (!item) {
@@ -88,13 +91,14 @@ export function registerDiceBox(box: any) {
       resultTotal: finalTotal,
       resultDetails: { rolls, modifier: req.modifier, formula: req.formula, isNat20, isNat1 },
     });
-
-    // Clear dice after animation settles
-    setTimeout(safeClear, 3000);
   };
 
   _diceInitStatus = 'ready';
+  _isJustInitialized = true;
   console.log("[DiceManager] ThreeJS DiceBox registered and ready ✓");
+  
+  // Reset the "just initialized" flag after 2 seconds
+  setTimeout(() => { _isJustInitialized = false; }, 2000);
 }
 
 function safeClear() {
@@ -208,10 +212,19 @@ export async function rollDice(
   onComplete: RollCompleteCallback,
   _retryCount = 0
 ) {
-  // If we are currently loading (re-initializing for a theme change), wait a bit
-  if (_diceInitStatus === 'loading' && _retryCount < 20) {
-    console.log("[DiceManager] DiceBox is re-initializing, waiting...");
+  // If we are currently loading or idle (re-initializing), wait a bit.
+  // This prevents the "buggy first roll" fallback to instant JS roll.
+  if ((_diceInitStatus === 'loading' || _diceInitStatus === 'idle' || !_diceBox) && _retryCount < 30) {
+    console.log(`[DiceManager] DiceBox not ready (status: ${_diceInitStatus}), waiting retry ${_retryCount}...`);
     setTimeout(() => rollDice(req, getPlayerName, onComplete, _retryCount + 1), 200);
+    return;
+  }
+
+  // Cooldown after switching themes to ensure physics world is stable
+  if (_isJustInitialized && _retryCount === 0) {
+    console.log("[DiceManager] DiceBox just initialized, adding 200ms cooldown for first roll stability...");
+    const timeout = Math.random() * 50 + 150; // Jitter to prevent multi-client sync pileup
+    setTimeout(() => rollDice(req, getPlayerName, onComplete, _retryCount + 1), timeout);
     return;
   }
 

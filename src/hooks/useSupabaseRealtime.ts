@@ -35,7 +35,8 @@ export type ActivePlayer = { name: string, avatar: string | null };
 export function useSupabaseRealtime(
   roomId: string, 
   playerName: string, 
-  playerAvatar: string | null
+  playerAvatar: string | null,
+  onRollReceived?: (req: RollRequest) => void
 ) {
   const channelRef = useRef<RealtimeChannel | null>(null);
   const roomIdRef = useRef<string>(roomId);
@@ -43,12 +44,13 @@ export function useSupabaseRealtime(
   const playerAvatarRef = useRef<string | null>(playerAvatar);
   const [logs, setLogs] = useState<RollResult[]>([]);
   const [activePlayers, setActivePlayers] = useState<ActivePlayer[]>([]);
+  const onRollReceivedRef = useRef(onRollReceived);
 
   // Keep refs updated when values change (no subscription rebuild!)
   useEffect(() => { roomIdRef.current = roomId; }, [roomId]);
   useEffect(() => { playerNameRef.current = playerName; }, [playerName]);
-  useEffect(() => { playerNameRef.current = playerName; }, [playerName]);
   useEffect(() => { playerAvatarRef.current = playerAvatar; }, [playerAvatar]);
+  useEffect(() => { onRollReceivedRef.current = onRollReceived; }, [onRollReceived]);
 
   // Update presence when playerName or avatar changes, WITHOUT rebuilding channel
   useEffect(() => {
@@ -94,6 +96,12 @@ export function useSupabaseRealtime(
     });
 
     roomChannel
+      .on("broadcast", { event: "roll_request" }, (payload) => {
+        const req = payload.payload as RollRequest;
+        if (req && req.playerName !== playerNameRef.current) {
+            onRollReceivedRef.current?.(req);
+        }
+      })
       .on("broadcast", { event: "roll_completed" }, (payload) => {
         const newLog = payload.payload as RollResult;
         console.log("[Realtime] DB Broadcast Received:", newLog);
@@ -183,6 +191,20 @@ export function useSupabaseRealtime(
     };
   }, [roomId]); // ONLY roomId — player name/avatar changes don't rebuild
 
+  const sendRollRequest = async (request: RollRequest) => {
+    const ch = channelRef.current;
+    if (!ch) {
+      console.warn("[Realtime] Channel not ready yet, broadcast skipped");
+      return;
+    }
+    
+    await ch.send({
+      type: "broadcast",
+      event: "roll_request",
+      payload: request,
+    });
+  };
+
   const saveRollResult = async (result: Omit<RollResult, "timestamp">) => {
     const currentRoomId = roomIdRef.current;
     if (!currentRoomId) {
@@ -223,5 +245,5 @@ export function useSupabaseRealtime(
     }
   };
 
-  return { logs, saveRollResult, activePlayers };
+  return { logs, sendRollRequest, saveRollResult, activePlayers };
 }

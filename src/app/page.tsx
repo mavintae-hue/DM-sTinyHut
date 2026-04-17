@@ -10,7 +10,7 @@ import BeyondDashboard from "@/components/character-sheet/BeyondDashboard";
 // Load DiceCanvas dynamically to prevent SSR issues with the 3D physics engine
 const DiceCanvas = dynamic(() => import("@/components/DiceCanvas"), { ssr: false });
 import { useSupabaseRealtime, RollRequest } from "@/hooks/useSupabaseRealtime";
-import { rollDice, setDiceTheme, getDiceInitStatus, setDiceInitStatus, destroyDiceBox, generateDeterministicRoll } from "@/lib/diceManager";
+import { rollDice, setDiceTheme, getDiceInitStatus, setDiceInitStatus, destroyDiceBox, generateDeterministicRoll, safeClear } from "@/lib/diceManager";
 import { LogIn, Users, Trash2, Palette, UserPlus, ChevronLeft, Paintbrush, Globe, Sparkles } from "lucide-react";
 
 export const DICE_COLORS = [
@@ -663,6 +663,15 @@ export default function Home() {
                 {diceStatus === 'idle' && "WAITING FOR ENGINE INITIALIZATION..."}
               </div>
             </div>
+
+            <button 
+              onClick={() => safeClear()}
+              className="p-2.5 bg-white/5 rounded-xl hover:bg-white/10 transition-colors border border-white/5 text-[10px] font-black text-gray-400 flex items-center gap-2 group/clear"
+              title="Clear all dice from screen"
+            >
+              <Trash2 className="w-4 h-4 group-hover/clear:text-red-400 transition-colors" />
+              <span className="hidden lg:inline">CLEAR</span>
+            </button>
 
             <button onClick={() => setShowThemePicker(!showThemePicker)} className="p-2.5 bg-white/5 rounded-xl hover:bg-white/10 transition-colors border border-white/5"><Paintbrush className="w-5 h-5" /></button>
             <button onClick={() => setShowColorPicker(!showColorPicker)} className="p-2.5 bg-white/5 rounded-xl hover:bg-white/10 transition-colors border border-white/5"><Palette className="w-5 h-5" /></button>

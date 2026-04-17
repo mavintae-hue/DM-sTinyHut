@@ -12,6 +12,7 @@ interface QueueItem {
 let _diceBox: any = null;
 let _diceInitStatus: DiceStatus = 'idle';
 let _isJustInitialized = false;
+let _latestRollId: string | null = null;
 const _pendingRolls = new Map<string, QueueItem>();
 
 /** Destroy the current DiceBox instance (called before reinitializing) */
@@ -91,6 +92,15 @@ export function registerDiceBox(box: any) {
       resultTotal: finalTotal,
       resultDetails: { rolls, modifier: req.modifier, formula: req.formula, isNat20, isNat1 },
     });
+
+    // Smart Auto-Clear: Only clear if this is still the latest roll after 7 seconds
+    const thisRollId = _latestRollId;
+    setTimeout(() => {
+      if (_latestRollId === thisRollId) {
+        console.log("[DiceManager] Auto-clearing dice after 7s timeout.");
+        safeClear();
+      }
+    }, 7000);
   };
 
   _diceInitStatus = 'ready';
@@ -101,7 +111,7 @@ export function registerDiceBox(box: any) {
   setTimeout(() => { _isJustInitialized = false; }, 2000);
 }
 
-function safeClear() {
+export function safeClear() {
   try {
     // dice-box-threejs uses clearDice(), not clear()
     if (_diceBox?.clearDice) _diceBox.clearDice();
@@ -249,6 +259,7 @@ export async function rollDice(
     }
 
     const rollId = `roll_${Date.now()}`;
+    _latestRollId = rollId;
     _pendingRolls.set(rollId, { req, getPlayerName, onComplete });
 
     try {

@@ -92,8 +92,10 @@ export default function Home() {
   const [diceStatus, setDiceStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
 
   // Display themes (what the DiceCanvas actually shows)
-  const [displayThemeColor, setDisplayThemeColor] = useState("#9b111e");
-  const [displayDiceTheme, setDisplayDiceTheme] = useState("wood");
+  const [displayThemeColor, setDisplayThemeColor] = useState(themeColor);
+  const [displayDiceTheme, setDisplayDiceTheme] = useState(diceTheme);
+  const currentThemeRef = useRef(themeColor);
+  const currentDiceThemeRef = useRef(diceTheme);
   const themeRevertTimer = useRef<NodeJS.Timeout | null>(null);
 
   const [roomId, setRoomId] = useState("");
@@ -122,26 +124,43 @@ export default function Home() {
     (req) => {
         // Only trigger the 3D visual roll if it's from someone else.
         if (req.playerName !== playerName) {
-            // BLOCK immediately! This prevents the viewer from rolling with the WRONG theme
-            // during the half-second it takes for the new DiceCanvas to mount and initialize.
-            setDiceInitStatus('loading');
-            destroyDiceBox();
+            const isSameTheme = 
+                req.themeColor === currentThemeRef.current && 
+                req.diceTheme === currentDiceThemeRef.current;
 
-            // Apply the roller's theme temporarily
-            if (req.themeColor) setDisplayThemeColor(req.themeColor);
-            if (req.diceTheme) setDisplayDiceTheme(req.diceTheme);
-
-            // Wait for the DiceCanvas to re-init (which calls registerDiceBox back to 'ready')
-            setTimeout(() => {
+            if (isSameTheme && getDiceInitStatus() === 'ready') {
+                // SAME THEME: Just roll immediately! No freeze, no loading.
+                console.log("[Dashboard] Incoming roll matches current theme. Triggering instant roll.");
                 rollDice(req, () => req.playerName, () => {});
-            }, 350); // Increased delay for slower networks/browsers
+            } else {
+                // NEW THEME: Must re-init the engine
+                console.log("[Dashboard] Incoming roll has NEW theme. Re-initializing engine...");
+                setDiceInitStatus('loading');
+                destroyDiceBox();
+
+                if (req.themeColor) {
+                    setDisplayThemeColor(req.themeColor);
+                    currentThemeRef.current = req.themeColor;
+                }
+                if (req.diceTheme) {
+                    setDisplayDiceTheme(req.diceTheme);
+                    currentDiceThemeRef.current = req.diceTheme;
+                }
+
+                // Wait for the DiceCanvas to re-init
+                setTimeout(() => {
+                    rollDice(req, () => req.playerName, () => {});
+                }, 350);
+            }
 
             // Set a timer to revert back to the user's preferred settings after 12 seconds
             if (themeRevertTimer.current) clearTimeout(themeRevertTimer.current);
             themeRevertTimer.current = setTimeout(() => {
                 setDisplayThemeColor(themeColor);
                 setDisplayDiceTheme(diceTheme);
-            }, 12000); // 12s total (more time for complex multi-dice sequences)
+                currentThemeRef.current = themeColor;
+                currentDiceThemeRef.current = diceTheme;
+            }, 12000);
         }
     }
   );
@@ -371,6 +390,8 @@ export default function Home() {
     // Ensure local display matches current selection immediately
     setDisplayThemeColor(themeColor || '#9b111e');
     setDisplayDiceTheme(diceTheme || 'default');
+    currentThemeRef.current = themeColor || '#9b111e';
+    currentDiceThemeRef.current = diceTheme || 'default';
     if (themeRevertTimer.current) clearTimeout(themeRevertTimer.current);
 
     // GENERATE DETERMINISTIC VALUES ONCE
@@ -393,6 +414,8 @@ export default function Home() {
     // Ensure local display matches current selection immediately
     setDisplayThemeColor(themeColor || '#9b111e');
     setDisplayDiceTheme(diceTheme || 'default');
+    currentThemeRef.current = themeColor || '#9b111e';
+    currentDiceThemeRef.current = diceTheme || 'default';
     if (themeRevertTimer.current) clearTimeout(themeRevertTimer.current);
     
     // GENERATE DETERMINISTIC VALUES ONCE
@@ -710,6 +733,7 @@ export default function Home() {
                         onClick={() => {
                           setDiceThemeState(t.id);
                           setDisplayDiceTheme(t.id);
+                          currentDiceThemeRef.current = t.id;
                           setDiceTheme(themeColor, t.id);
                           handleUpdatePlayer({ dice_theme: t.id });
                         }}
@@ -762,6 +786,7 @@ export default function Home() {
                             onClick={() => {
                                 setThemeColor(c.hex);
                                 setDisplayThemeColor(c.hex);
+                                currentThemeRef.current = c.hex;
                                 setDiceTheme(c.hex, diceTheme);
                                 handleUpdatePlayer({ dice_color: c.hex });
                             }} 

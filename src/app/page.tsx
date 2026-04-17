@@ -34,14 +34,20 @@ export const DICE_STYLES = [
 ];
 
 export const DICE_THEMES = [
-  { id: "wood", name: "Forest", icon: "🌳" },
-  { id: "marble", name: "Marble", icon: "🏛️" },
-  { id: "water", name: "Ocean", icon: "🌊" },
-  { id: "fire", name: "Inferno", icon: "🔥" },
-  { id: "stars", name: "Galaxy", icon: "✨" },
-  { id: "stone", name: "Stone", icon: "⛰️" },
-  { id: "skulls", name: "Necromancer", icon: "💀" },
-  { id: "dragon", name: "Dragon", icon: "🐉" },
+  { id: "wood",         name: "Forest",     icon: "🌳" },
+  { id: "marble",       name: "Marble",     icon: "🏛️" },
+  { id: "water",        name: "Ocean",      icon: "🌊" },
+  { id: "fire",         name: "Inferno",    icon: "🔥" },
+  { id: "stars",        name: "Galaxy",     icon: "✨" },
+  { id: "ice",          name: "Frozen",     icon: "🧊" },
+  { id: "skulls",       name: "Necromancer",icon: "💀" },
+  { id: "dragon",       name: "Dragon",     icon: "🐉" },
+  { id: "metal",        name: "Steel",      icon: "⚙️" },
+  { id: "glitter",      name: "Glitter",    icon: "💎" },
+  { id: "stainedglass", name: "Sacred",     icon: "⛪" },
+  { id: "paper",        name: "Arcane",     icon: "📜" },
+  { id: "cloudy",       name: "Storm",      icon: "⛈️" },
+  { id: "leopard",      name: "Wild",       icon: "🐆" },
 ];
 
 export const BG_PRESETS = [

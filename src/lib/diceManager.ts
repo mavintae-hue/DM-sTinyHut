@@ -119,14 +119,27 @@ export function setDiceTheme(_color: string, _theme: string = "wood") {
 /** ─── Fallback: instant JS roll ─────────────────────────────────────────── */
 function instantRoll(req: RollRequest, onComplete: RollCompleteCallback) {
   console.log("[DiceManager] Triggering INSTANT ROLL fallback...");
-  const notation = (req.rollType === "hit_adv" || req.rollType === "hit_disadv") ? "2d20" : req.formula;
-  const match = notation.match(/^(\d*)d(\d+)/i);
-  const count = parseInt(match?.[1] || "1") || 1;
-  const faces = parseInt(match?.[2] || "20") || 20;
+  let notation = (req.rollType === "hit_adv" || req.rollType === "hit_disadv") ? "2d20" : req.formula;
+  
+  const cleanNotation = notation.replace(/k[hl]\d+/gi, "");
+  const groups = cleanNotation.match(/(?:\d+)?d\d+/gi) || [];
+  
+  const rolls: number[] = [];
+  let totalFromDice = 0;
 
-  const rolls = Array.from({ length: count }, () => Math.ceil(Math.random() * faces));
+  groups.forEach(group => {
+    const match = group.match(/^(\d*)d(\d+)/i);
+    const count = parseInt(match?.[1] || "1") || 1;
+    const faces = parseInt(match?.[2] || "20") || 20;
+    for (let i = 0; i < count; i++) {
+      const r = Math.ceil(Math.random() * faces);
+      rolls.push(r);
+      totalFromDice += r;
+    }
+  });
+
   let chosenDie = rolls[0] || 0;
-  let finalTotal = rolls.reduce((a, b) => a + b, 0) + req.modifier;
+  let finalTotal = totalFromDice + req.modifier;
 
   if (req.rollType === "hit_adv" && rolls.length === 2) {
     chosenDie = Math.max(...rolls);
@@ -171,10 +184,8 @@ export function generateDeterministicRoll(req: RollRequest): string[] {
 
 /** ─── Build a single notation string from forced notations ─────────────── */
 function buildNotationString(forcedNotations: string[]): string {
-  // dice-box-threejs roll() takes a SINGLE string, e.g. "2d6@3,4" or "1d20@18"
-  // For multiple groups, join them (the library parses "1d8+2d6" style)
-  // But forced notation only works on a single group at a time, so roll them one by one
-  return forcedNotations[0] || "1d20";
+  // Join all groups with '+' (e.g. "1d8@5+2d6@3,4")
+  return forcedNotations.join('+') || "1d20";
 }
 
 /** ─── Main roll entry point ──────────────────────────────────────────────── */
@@ -204,7 +215,7 @@ export function rollDice(
         instantRoll(req, onComplete);
         return;
       }
-      notation = groups[0] ?? "1d20"; // roll first group visually
+      notation = groups.join('+'); // roll all groups visually
     }
 
     const rollId = `roll_${Date.now()}`;

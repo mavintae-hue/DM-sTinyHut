@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { registerDiceBox, setDiceInitStatus } from "@/lib/diceManager";
+import { registerDiceBox, destroyDiceBox, setDiceInitStatus } from "@/lib/diceManager";
 
 interface DiceCanvasProps {
   themeColor: string;
@@ -9,35 +9,53 @@ interface DiceCanvasProps {
 }
 
 export default function DiceCanvas({ themeColor, diceTheme }: DiceCanvasProps) {
-  const initAttempted = useRef(false);
+  const boxRef = useRef<any>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (initAttempted.current) return;
-    initAttempted.current = true;
+
+    let cancelled = false;
 
     const initDice = async () => {
-      console.log("[DiceCanvas] Starting ThreeJS DiceBox initialization...");
+      // Destroy existing box before reinitializing (theme/color change)
+      if (boxRef.current) {
+        try {
+          boxRef.current.clearDice?.();
+          // Remove the canvas Three.js appended into #dice-box
+          const container = document.getElementById("dice-box");
+          if (container) container.innerHTML = "";
+        } catch (_) {}
+        boxRef.current = null;
+        destroyDiceBox();
+      }
+
+      console.log(`[DiceCanvas] Initializing with theme="${diceTheme}" color="${themeColor}"`);
       setDiceInitStatus('loading');
 
       try {
         const mod = await import("@3d-dice/dice-box-threejs");
         const DiceBox = mod.default || mod;
 
-        if (typeof DiceBox !== 'function') {
-          throw new Error("DiceBox constructor not found in module exports");
-        }
+        if (typeof DiceBox !== 'function') throw new Error("DiceBox constructor not found");
+        if (cancelled) return;
 
-        // The constructor fires document.querySelector so the element MUST be in DOM
         const container = document.getElementById("dice-box");
-        if (!container) throw new Error("#dice-box element not in DOM yet");
+        if (!container) throw new Error("#dice-box element not in DOM");
 
-        // Pass onRollComplete IN the constructor config (not after)
+        // Build a custom colorset so the user's chosen color and texture are applied
+        const customColorset = {
+          name: `custom_${themeColor}_${diceTheme}_${Date.now()}`,
+          foreground: "#ffffff",          // dice number/symbol color
+          background: themeColor || "#9b111e", // dice body color (user's pick)
+          outline: "#000000",
+          texture: diceTheme || "wood",   // texture key from library's texturelist
+          material: "glass",
+          description: "Custom D&D Theme",
+        };
+
         const box = new (DiceBox as any)("#dice-box", {
-          assetPath: "/dice-assets/",         // base path for all texture/sound loading
-          theme_colorset: "white",             // built-in colorset name
-          theme_texture: diceTheme || "",      // texture name key from the library's texturelist
-          theme_material: "glass",
+          assetPath: "/dice-assets/",
+          theme_customColorset: customColorset,
           theme_surface: "green-felt",
           gravity_multiplier: 400,
           light_intensity: 0.9,
@@ -47,24 +65,34 @@ export default function DiceCanvas({ themeColor, diceTheme }: DiceCanvasProps) {
           sounds: false,
         });
 
-        // The correct async init method is `initialize()`, NOT `init()`
+        // CORRECT method name is `initialize()`, NOT `init()`
         await box.initialize();
 
+        if (cancelled) {
+          try { box.clearDice?.(); } catch (_) {}
+          return;
+        }
+
+        boxRef.current = box;
         registerDiceBox(box);
         setDiceInitStatus('ready');
-        console.log("[DiceCanvas] ✓ ThreeJS DiceBox ready and registered!");
+        console.log("[DiceCanvas] ✓ ThreeJS DiceBox ready!");
 
       } catch (err: any) {
-        console.error("[DiceCanvas] ThreeJS DiceBox init FAILED:", err?.message || err);
-        setDiceInitStatus('error');
-        initAttempted.current = false;
+        if (!cancelled) {
+          console.error("[DiceCanvas] DiceBox init FAILED:", err?.message || err);
+          setDiceInitStatus('error');
+        }
       }
     };
 
-    const timer = setTimeout(initDice, 200);
-    return () => clearTimeout(timer);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // only run once on mount
+    const timer = setTimeout(initDice, 150);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [themeColor, diceTheme]); // Re-init when color or theme changes
 
   return (
     <div

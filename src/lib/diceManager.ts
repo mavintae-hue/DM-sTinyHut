@@ -13,6 +13,14 @@ let _diceBox: any = null;
 let _diceInitStatus: DiceStatus = 'idle';
 const _pendingRolls = new Map<string, QueueItem>();
 
+/** Destroy the current DiceBox instance (called before reinitializing) */
+export function destroyDiceBox() {
+  _diceBox = null;
+  _diceInitStatus = 'idle';
+  _pendingRolls.clear();
+  console.log("[DiceManager] DiceBox destroyed");
+}
+
 /** Called by DiceCanvas once DiceBox is initialized */
 export function registerDiceBox(box: any) {
   if (!box) return;

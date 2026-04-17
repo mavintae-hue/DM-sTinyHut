@@ -91,6 +91,11 @@ export default function Home() {
   const [showRollLog, setShowRollLog] = useState(true);
   const [diceStatus, setDiceStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
 
+  // Display themes (what the DiceCanvas actually shows)
+  const [displayThemeColor, setDisplayThemeColor] = useState("#9b111e");
+  const [displayDiceTheme, setDisplayDiceTheme] = useState("wood");
+  const themeRevertTimer = useRef<NodeJS.Timeout | null>(null);
+
   const [roomId, setRoomId] = useState("");
   const [roomUuid, setRoomUuid] = useState<string | null>(null);
   const [joined, setJoined] = useState(false);
@@ -116,9 +121,23 @@ export default function Home() {
     playerAvatar,
     (req) => {
         // Only trigger the 3D visual roll if it's from someone else.
-        // We pass an empty callback so their local incorrect outcome isn't saved.
         if (req.playerName !== playerName) {
-            rollDice(req, () => req.playerName, () => {}, req.diceTheme);
+            // Apply the roller's theme temporarily
+            if (req.themeColor) setDisplayThemeColor(req.themeColor);
+            if (req.diceTheme) setDisplayDiceTheme(req.diceTheme);
+
+            // Wait a tiny bit for the DiceCanvas to potentially trigger a re-init if it's a new theme
+            // Then roll the dice. rollDice handles the queueing.
+            setTimeout(() => {
+                rollDice(req, () => req.playerName, () => {});
+            }, 100);
+
+            // Set a timer to revert back to the user's preferred settings after 8 seconds
+            if (themeRevertTimer.current) clearTimeout(themeRevertTimer.current);
+            themeRevertTimer.current = setTimeout(() => {
+                setDisplayThemeColor(themeColor);
+                setDisplayDiceTheme(diceTheme);
+            }, 8000);
         }
     }
   );
@@ -171,8 +190,10 @@ export default function Home() {
     }
     if (player.dice_theme) {
         setDiceThemeState(player.dice_theme);
+        setDisplayDiceTheme(player.dice_theme);
     }
     setDiceTheme(player.dice_color || "#9b111e", player.dice_theme || "default");
+    setDisplayThemeColor(player.dice_color || "#9b111e");
     if (player.bg_theme) setBgTheme(player.bg_theme);
     if (player.font_theme) setFontTheme(player.font_theme);
     console.log("[handleSelectPlayer] Selecting:", player);
@@ -665,6 +686,7 @@ export default function Home() {
                         key={t.id} 
                         onClick={() => {
                           setDiceThemeState(t.id);
+                          setDisplayDiceTheme(t.id);
                           setDiceTheme(themeColor, t.id);
                           handleUpdatePlayer({ dice_theme: t.id });
                         }}
@@ -690,6 +712,7 @@ export default function Home() {
                         onClick={() => {
                           const val = s.id === "solid" ? (themeColor.startsWith('#') ? themeColor : DICE_COLORS[1].hex) : s.id;
                           setThemeColor(val);
+                          setDisplayThemeColor(val);
                           setDiceTheme(val, diceTheme);
                           handleUpdatePlayer({ dice_color: val });
                         }}
@@ -715,6 +738,7 @@ export default function Home() {
                             key={c.name} 
                             onClick={() => {
                                 setThemeColor(c.hex);
+                                setDisplayThemeColor(c.hex);
                                 setDiceTheme(c.hex, diceTheme);
                                 handleUpdatePlayer({ dice_color: c.hex });
                             }} 
@@ -781,7 +805,8 @@ export default function Home() {
         </div>
       )}
 
-      <DiceCanvas themeColor={themeColor} diceTheme={diceTheme} />
+      <DiceCanvas themeColor={displayThemeColor} diceTheme={displayDiceTheme} />
     </main>
+
   );
 }

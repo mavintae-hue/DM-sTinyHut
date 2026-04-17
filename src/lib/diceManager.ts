@@ -202,21 +202,25 @@ function buildNotationString(forcedNotations: string[]): string {
 }
 
 /** ─── Main roll entry point ──────────────────────────────────────────────── */
-export function rollDice(
+export async function rollDice(
   req: RollRequest,
   getPlayerName: () => string,
   onComplete: RollCompleteCallback,
-  _overrideTheme?: string
+  _retryCount = 0
 ) {
+  // If we are currently loading (re-initializing for a theme change), wait a bit
+  if (_diceInitStatus === 'loading' && _retryCount < 20) {
+    console.log("[DiceManager] DiceBox is re-initializing, waiting...");
+    setTimeout(() => rollDice(req, getPlayerName, onComplete, _retryCount + 1), 200);
+    return;
+  }
+
   if (_diceBox && _diceInitStatus === 'ready') {
     let notation: string;
 
     if (req.forcedNotations && req.forcedNotations.length > 0) {
-      // Use first forced group - single notation string for the 3D render
-      // The math is already pre-calculated in forcedNotations
       notation = buildNotationString(req.forcedNotations);
     } else {
-      // Build notation from formula
       let formula = req.formula;
       if (req.rollType === "hit_adv" || req.rollType === "hit_disadv") {
         formula = "2d20";
@@ -228,7 +232,7 @@ export function rollDice(
         instantRoll(req, onComplete);
         return;
       }
-      notation = groups.join('+'); // roll all groups visually
+      notation = groups.join('+');
     }
 
     const rollId = `roll_${Date.now()}`;
@@ -236,7 +240,6 @@ export function rollDice(
 
     try {
       console.log(`[DiceManager] Rolling notation: "${notation}"`);
-      // dice-box-threejs roll() takes a single string — e.g. "1d20@18"
       const result = _diceBox.roll(notation);
       if (result instanceof Promise) {
         result.catch((e: any) => console.error("[DiceBox] Roll promise rejected:", e));

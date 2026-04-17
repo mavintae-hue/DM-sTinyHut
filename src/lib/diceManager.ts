@@ -184,8 +184,21 @@ export function generateDeterministicRoll(req: RollRequest): string[] {
 
 /** ─── Build a single notation string from forced notations ─────────────── */
 function buildNotationString(forcedNotations: string[]): string {
-  // Join all groups with '+' (e.g. "1d8@5+2d6@3,4")
-  return forcedNotations.join('+') || "1d20";
+  // Construct one single valid string for the parser: NOTATION@VALUE1,VALUE2,...
+  // Example: ["1d8@5", "2d6@3,4"] -> "1d8+2d6@5,3,4"
+  const notations: string[] = [];
+  const values: string[] = [];
+
+  forcedNotations.forEach(fn => {
+    const [not, val] = fn.split('@');
+    if (not) notations.push(not);
+    if (val) values.push(val);
+  });
+
+  const notationStr = notations.join('+');
+  const valuesStr = values.length > 0 ? `@${values.join(',')}` : '';
+  
+  return (notationStr + valuesStr) || "1d20";
 }
 
 /** ─── Main roll entry point ──────────────────────────────────────────────── */

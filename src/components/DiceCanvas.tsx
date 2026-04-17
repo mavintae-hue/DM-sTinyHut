@@ -57,11 +57,11 @@ export default function DiceCanvas({ themeColor, diceTheme }: DiceCanvasProps) {
           assetPath: "/dice-assets/",
           theme_customColorset: customColorset,
           theme_surface: "green-felt",
-          gravity_multiplier: 400,
-          light_intensity: 0.9,
+          gravity_multiplier: 600, // Increase for steadier drop
+          light_intensity: 1.0,   // Brighter numbers
           baseScale: 100,
           shadows: true,
-          strength: 2,
+          strength: 2.5,          // More bounce to prevent dice getting "stuck"
           sounds: false,
         });
 

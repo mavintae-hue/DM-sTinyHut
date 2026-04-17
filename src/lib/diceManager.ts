@@ -22,27 +22,20 @@ export function registerDiceBox(box: any) {
   _diceBox = box;
 
   box.onRollComplete = (results: any) => {
-    // Dice-box usually returns either an array of objects or an ID 
-    // We will find the rollId from the results
+    // dice-box-threejs results normally come in an array
     const rollId = results[0]?.groupId || results[0]?.id || "unknown";
-    
     let item = _pendingRolls.get(rollId);
     
-    // Fallback: If exact ID not found, just grab the most recently added pending roll
     if (!item && _pendingRolls.size > 0) {
-      // Get the last entry in the Map (most recent)
       const entries = Array.from(_pendingRolls.entries());
-      const lastEntry = entries[entries.length - 1];
-      item = lastEntry[1];
-      
-      // Clear the map so it doesn't grow infinitely with stale rolls
+      item = entries[entries.length - 1][1];
       _pendingRolls.clear();
     } else if (item) {
       _pendingRolls.delete(rollId);
     }
     
     if (!item) {
-        console.warn("[DiceManager] Result received but unmatched to a pending request (size 0).");
+        console.warn("[DiceManager] Result received but unmatched to a pending request.");
         setTimeout(() => { try { _diceBox?.clear(); } catch (_) {} }, 2500);
         return;
     }
@@ -52,7 +45,6 @@ export function registerDiceBox(box: any) {
     let totalFromDice = 0;
     const rolls: number[] = [];
 
-    // Parse different @3d-dice/dice-box result formats
     if (Array.isArray(results)) {
       results.forEach((group: any) => {
           if (group.value !== undefined) {
@@ -91,14 +83,13 @@ export function registerDiceBox(box: any) {
       resultDetails: { rolls, modifier: req.modifier, formula: req.formula, isNat20, isNat1 },
     });
 
-    // Clear after animation
     setTimeout(() => {
       try { _diceBox?.clear(); } catch (_) {}
     }, 2500);
   };
 
   _diceInitStatus = 'ready';
-  console.log("[DiceManager] DiceBox registered and ready ✓");
+  console.log("[DiceManager] ThreeJS DiceBox registered and ready ✓");
 }
 
 export const setDiceInitStatus = (status: DiceStatus) => {
@@ -108,12 +99,12 @@ export const setDiceInitStatus = (status: DiceStatus) => {
 export const getDiceInitStatus = () => _diceInitStatus;
 
 /** Update dice theme or color globally */
-export function setDiceTheme(color: string, theme: string = "default") {
+export function setDiceTheme(color: string, theme: string = "wood") {
   _currentTheme = theme;
   if (_diceBox) {
-    const config: any = { theme };
+    const config: any = { theme_texture: `/dice-assets/textures/${theme}.webp` };
     if (color && color.startsWith('#')) {
-        config.themeColor = color;
+        config.theme_color = color;
     }
     try { _diceBox.updateConfig(config); } catch (_) {}
   }
@@ -155,6 +146,25 @@ function instantRoll(
   });
 }
 
+/** ─── Deterministic Sync Generation ───────────────────────────────────────── */
+export function generateDeterministicRoll(req: RollRequest): string[] {
+  let notation = req.formula;
+  if (req.rollType === "hit_adv" || req.rollType === "hit_disadv") {
+    notation = "2d20";
+  }
+
+  const cleanNotation = notation.replace(/k[hl]\d+/gi, "");
+  const diceGroups = cleanNotation.match(/(?:\d+)?d\d+/gi) || [];
+
+  return diceGroups.map(group => {
+    const match = group.match(/^(\d*)d(\d+)/i);
+    const count = parseInt(match?.[1] || "1") || 1;
+    const faces = parseInt(match?.[2] || "20") || 20;
+    const rolls = Array.from({ length: count }, () => Math.ceil(Math.random() * faces));
+    return `${group}@${rolls.join(',')}`;
+  });
+}
+
 /** ─── Main roll entry point ──────────────────────────────────────────────── */
 export function rollDice(
   req: RollRequest,
@@ -166,34 +176,39 @@ export function rollDice(
     const style = req.themeColor || "#9b111e";
     const theme = overrideTheme || req.diceTheme || _currentTheme;
     
-    let notation = req.formula;
-    if (req.rollType === "hit_adv" || req.rollType === "hit_disadv") {
-      notation = "2d20";
+    // We expect the network payload to provide the perfectly synced predetermined values
+    // If not provided (i.e. single-player isolated test), fallback to natural formula
+    let rollPayload: string | string[] = req.formula;
+
+    if (req.forcedNotations && req.forcedNotations.length > 0) {
+      rollPayload = req.forcedNotations;
+    } else {
+      let notation = req.formula;
+      if (req.rollType === "hit_adv" || req.rollType === "hit_disadv") {
+        notation = "2d20";
+      }
+      const cleanNotation = notation.replace(/k[hl]\d+/gi, "");
+      rollPayload = cleanNotation.match(/(?:\d+)?d\d+/gi) || [];
     }
 
-    const cleanNotation = notation.replace(/k[hl]\d+/gi, "");
-    
-    // Parse into an array of dice groups (e.g. "1d8 + 3d12" -> ["1d8", "3d12"])
-    const diceGroups = cleanNotation.match(/(?:\d+)?d\d+/gi) || [];
-
-    if (diceGroups.length === 0) {
+    if (rollPayload.length === 0) {
        console.warn("[DiceManager] No valid dice found in formula:", req.formula);
        instantRoll(req, onComplete);
        return;
     }
 
-    // Using the simplest form of calling the 3D dice engine
     const rollId = `roll_${Date.now()}`;
     _pendingRolls.set(rollId, { req, getPlayerName, onComplete });
 
     try {
-      console.log(`[DiceManager] Rolling groups:`, diceGroups, `with theme: ${theme}`);
+      console.log(`[DiceManager] Rolling payload:`, rollPayload, `with theme: ${theme}`);
       
-      // We pass the config to ensure the colors are updated before the roll
-      _diceBox.updateConfig({ theme, themeColor: style }); 
+      // For dice-box-threejs we might want to map theme names back to textures if we have complex logic,
+      // but for now we'll just pipe it back to theme_texture. 
+      // If the URL is provided, it handles it in updateConfig
+      _diceBox.updateConfig({ theme_color: style }); 
 
-      // Array of strings triggers multi-dice rolls in @3d-dice/dice-box
-      const result = _diceBox.roll(diceGroups);
+      const result = _diceBox.roll(rollPayload);
       
       if (result instanceof Promise) {
           result.catch(e => console.error("[DiceBox] Roll Promise rejected:", e));

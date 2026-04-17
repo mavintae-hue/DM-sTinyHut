@@ -17,11 +17,11 @@ export default function DiceCanvas({ themeColor, diceTheme }: DiceCanvasProps) {
     initAttempted.current = true;
 
     const initDice = async () => {
-      console.log("[DiceCanvas] Starting bare-bones DiceBox initialization...");
+      console.log("[DiceCanvas] Starting ThreeJS DiceBox initialization...");
       setDiceInitStatus('loading');
 
       try {
-        const mod = await import("@3d-dice/dice-box");
+        const mod = await import("@3d-dice/dice-box-threejs");
         const DiceBox = mod.default || mod;
 
         if (typeof DiceBox !== 'function') {
@@ -29,25 +29,26 @@ export default function DiceCanvas({ themeColor, diceTheme }: DiceCanvasProps) {
         }
 
         // Standard constructor targeting our JSX container
-        const box = new (DiceBox as any)("#dice-box", {
-          assetPath: "/dice-assets/", 
-          theme: diceTheme,
-          themeColor: themeColor,
-          scale: 5,
-          gravity: 1.5,
-          spinForce: 15,
-          throwForce: 10,
+        const box = new DiceBox("#dice-box", {
+          assetPath: "/dice-assets/", // dice-box-threejs might not use this, but we leave it just in case
+          theme_texture: `/dice-assets/textures/${diceTheme || 'wood'}.webp`,
+          theme_color: themeColor,
+          scale: 6,
+          gravity_multiplier: 600,
+          light_intensity: 0.8,
+          shadows: true,
+          strength: 2,
         });
 
-        // Simple initialization
+        // Initialize ThreeJS Box
         await box.init();
         
         registerDiceBox(box);
         setDiceInitStatus('ready');
-        console.log("[DiceCanvas] ✓ DiceBox ready and registered!");
+        console.log("[DiceCanvas] ✓ ThreeJS DiceBox ready and registered!");
 
       } catch (err: any) {
-        console.error("[DiceCanvas] DiceBox init FAILED:", err);
+        console.error("[DiceCanvas] ThreeJS DiceBox init FAILED:", err);
         setDiceInitStatus('error');
         initAttempted.current = false;
       }

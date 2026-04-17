@@ -12,6 +12,7 @@ export type RollRequest = {
   modifier: number;
   themeColor?: string;
   diceTheme?: string;
+  forcedNotations?: string[]; // Used for deterministic physics syncing across the network
 };
 
 export type RollResult = {

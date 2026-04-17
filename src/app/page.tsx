@@ -10,7 +10,7 @@ import BeyondDashboard from "@/components/character-sheet/BeyondDashboard";
 // Load DiceCanvas dynamically to prevent SSR issues with the 3D physics engine
 const DiceCanvas = dynamic(() => import("@/components/DiceCanvas"), { ssr: false });
 import { useSupabaseRealtime, RollRequest } from "@/hooks/useSupabaseRealtime";
-import { rollDice, setDiceTheme, getDiceInitStatus } from "@/lib/diceManager";
+import { rollDice, setDiceTheme, getDiceInitStatus, generateDeterministicRoll } from "@/lib/diceManager";
 import { LogIn, Users, Trash2, Palette, UserPlus, ChevronLeft, Paintbrush, Globe, Sparkles } from "lucide-react";
 
 export const DICE_COLORS = [
@@ -34,14 +34,14 @@ export const DICE_STYLES = [
 ];
 
 export const DICE_THEMES = [
-  { id: "default", name: "Classic", icon: "🎲" },
-  { id: "diceOfRolling", name: "Rolling", icon: "💎" },
-  { id: "gemstone", name: "Gemstone", icon: "🔮" },
-  { id: "rock", name: "Pebble", icon: "⛰️" },
-  { id: "wooden", name: "Forest", icon: "🌳" },
-  { id: "rust", name: "Ancient", icon: "🏚️" },
-  { id: "smooth", name: "Glass", icon: "🧊" },
-  { id: "blueGreenMetal", name: "Metal", icon: "🛠️" },
+  { id: "wood", name: "Forest", icon: "🌳" },
+  { id: "marble", name: "Marble", icon: "🏛️" },
+  { id: "water", name: "Ocean", icon: "🌊" },
+  { id: "fire", name: "Inferno", icon: "🔥" },
+  { id: "stars", name: "Galaxy", icon: "✨" },
+  { id: "stone", name: "Stone", icon: "⛰️" },
+  { id: "skulls", name: "Necromancer", icon: "💀" },
+  { id: "dragon", name: "Dragon", icon: "🐉" },
 ];
 
 export const BG_PRESETS = [
@@ -337,19 +337,26 @@ export default function Home() {
       diceTheme: diceTheme || 'default',
     };
 
-    // Roll locally with 3D dice
+    // GENERATE DETERMINISTIC VALUES ONCE
+    request.forcedNotations = generateDeterministicRoll(request);
+
+    // Roll locally with 3D dice (using forced values)
     rollDice(
       request,
       () => playerName,
       (res) => saveRollResult({ ...res, resultDetails: { ...res.resultDetails, player_avatar: playerAvatar } })
     );
 
-    // Broadcast so other players in the realm see the dice roll too
+    // Broadcast EXACT SAME forced values so other players in the realm see the exact same 3D dice!
     sendRollRequest(request);
   };
 
   const handleQuickRoll = (request: RollRequest) => {
     const req = { ...request, themeColor, diceTheme };
+    
+    // GENERATE DETERMINISTIC VALUES ONCE
+    req.forcedNotations = generateDeterministicRoll(req);
+    
     rollDice(req, () => playerName, (res) => saveRollResult({ ...res, resultDetails: { ...res.resultDetails, player_avatar: playerAvatar } }));
     sendRollRequest(req);
   };

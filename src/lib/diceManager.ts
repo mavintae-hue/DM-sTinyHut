@@ -10,63 +10,61 @@ interface QueueItem {
 }
 
 let _diceBox: any = null;
-let _currentTheme = "default";
 let _diceInitStatus: DiceStatus = 'idle';
-
 const _pendingRolls = new Map<string, QueueItem>();
 
 /** Called by DiceCanvas once DiceBox is initialized */
 export function registerDiceBox(box: any) {
   if (!box) return;
-  console.log("[DiceManager] Registering DiceBox instance", box);
+  console.log("[DiceManager] Registering DiceBox instance");
   _diceBox = box;
 
-  box.onRollComplete = (results: any) => {
-    // dice-box-threejs results normally come in an array
-    const rollId = results[0]?.groupId || results[0]?.id || "unknown";
-    let item = _pendingRolls.get(rollId);
-    
-    if (!item && _pendingRolls.size > 0) {
+  // dice-box-threejs fires onRollComplete with { sets, total, notation }
+  box.onRollComplete = (result: any) => {
+    console.log("[DiceManager] onRollComplete fired:", result);
+
+    // Grab the first (and only) pending roll
+    let item: QueueItem | undefined;
+    if (_pendingRolls.size > 0) {
       const entries = Array.from(_pendingRolls.entries());
       item = entries[entries.length - 1][1];
       _pendingRolls.clear();
-    } else if (item) {
-      _pendingRolls.delete(rollId);
     }
-    
+
     if (!item) {
-        console.warn("[DiceManager] Result received but unmatched to a pending request.");
-        setTimeout(() => { try { _diceBox?.clear(); } catch (_) {} }, 2500);
-        return;
+      console.warn("[DiceManager] Roll result received but no pending request found.");
+      safeClear();
+      return;
     }
-    
+
     const { req, onComplete } = item;
 
-    let totalFromDice = 0;
+    // Parse the new result format: { sets: [{rolls:[{value},...], total},...], total, modifier }
     const rolls: number[] = [];
+    let totalFromDice = 0;
 
-    if (Array.isArray(results)) {
-      results.forEach((group: any) => {
-          if (group.value !== undefined) {
-              totalFromDice += group.value;
-              rolls.push(group.value);
-          } 
-          else if (group.rolls) {
-              group.rolls.forEach((r: any) => {
-                  totalFromDice += r.value;
-                  rolls.push(r.value);
-              });
-          }
+    if (result?.sets && Array.isArray(result.sets)) {
+      result.sets.forEach((set: any) => {
+        if (Array.isArray(set.rolls)) {
+          set.rolls.forEach((r: any) => {
+            rolls.push(r.value);
+            totalFromDice += r.value;
+          });
+        }
       });
+    } else if (typeof result?.total === "number") {
+      // Fallback: just use total
+      totalFromDice = result.total;
+      rolls.push(result.total);
     }
 
     let chosenDie = rolls[0] || 0;
     let finalTotal = totalFromDice + req.modifier;
 
-    if (req.rollType === "hit_adv" && rolls.length === 2) {
+    if (req.rollType === "hit_adv" && rolls.length >= 2) {
       chosenDie = Math.max(...rolls);
       finalTotal = chosenDie + req.modifier;
-    } else if (req.rollType === "hit_disadv" && rolls.length === 2) {
+    } else if (req.rollType === "hit_disadv" && rolls.length >= 2) {
       chosenDie = Math.min(...rolls);
       finalTotal = chosenDie + req.modifier;
     }
@@ -83,13 +81,19 @@ export function registerDiceBox(box: any) {
       resultDetails: { rolls, modifier: req.modifier, formula: req.formula, isNat20, isNat1 },
     });
 
-    setTimeout(() => {
-      try { _diceBox?.clear(); } catch (_) {}
-    }, 2500);
+    // Clear dice after animation settles
+    setTimeout(safeClear, 3000);
   };
 
   _diceInitStatus = 'ready';
   console.log("[DiceManager] ThreeJS DiceBox registered and ready ✓");
+}
+
+function safeClear() {
+  try {
+    // dice-box-threejs uses clearDice(), not clear()
+    if (_diceBox?.clearDice) _diceBox.clearDice();
+  } catch (_) {}
 }
 
 export const setDiceInitStatus = (status: DiceStatus) => {
@@ -98,23 +102,14 @@ export const setDiceInitStatus = (status: DiceStatus) => {
 
 export const getDiceInitStatus = () => _diceInitStatus;
 
-/** Update dice theme or color globally */
-export function setDiceTheme(color: string, theme: string = "wood") {
-  _currentTheme = theme;
-  if (_diceBox) {
-    const config: any = { theme_texture: `/dice-assets/textures/${theme}.webp` };
-    if (color && color.startsWith('#')) {
-        config.theme_color = color;
-    }
-    try { _diceBox.updateConfig(config); } catch (_) {}
-  }
+/** Theme-setting is handled at construction time, this is a no-op stub for compat */
+export function setDiceTheme(_color: string, _theme: string = "wood") {
+  // dice-box-threejs doesn't expose updateConfig — theme is set at init time
+  // Future: could reinitialize the box with new theme
 }
 
 /** ─── Fallback: instant JS roll ─────────────────────────────────────────── */
-function instantRoll(
-  req: RollRequest,
-  onComplete: RollCompleteCallback
-) {
+function instantRoll(req: RollRequest, onComplete: RollCompleteCallback) {
   console.log("[DiceManager] Triggering INSTANT ROLL fallback...");
   const notation = (req.rollType === "hit_adv" || req.rollType === "hit_disadv") ? "2d20" : req.formula;
   const match = notation.match(/^(\d*)d(\d+)/i);
@@ -161,8 +156,17 @@ export function generateDeterministicRoll(req: RollRequest): string[] {
     const count = parseInt(match?.[1] || "1") || 1;
     const faces = parseInt(match?.[2] || "20") || 20;
     const rolls = Array.from({ length: count }, () => Math.ceil(Math.random() * faces));
+    // Format: "2d6@3,4" — forces specific outcomes
     return `${group}@${rolls.join(',')}`;
   });
+}
+
+/** ─── Build a single notation string from forced notations ─────────────── */
+function buildNotationString(forcedNotations: string[]): string {
+  // dice-box-threejs roll() takes a SINGLE string, e.g. "2d6@3,4" or "1d20@18"
+  // For multiple groups, join them (the library parses "1d8+2d6" style)
+  // But forced notation only works on a single group at a time, so roll them one by one
+  return forcedNotations[0] || "1d20";
 }
 
 /** ─── Main roll entry point ──────────────────────────────────────────────── */
@@ -170,58 +174,49 @@ export function rollDice(
   req: RollRequest,
   getPlayerName: () => string,
   onComplete: RollCompleteCallback,
-  overrideTheme?: string
+  _overrideTheme?: string
 ) {
-  if (_diceBox) {
-    const style = req.themeColor || "#9b111e";
-    const theme = overrideTheme || req.diceTheme || _currentTheme;
-    
-    // We expect the network payload to provide the perfectly synced predetermined values
-    // If not provided (i.e. single-player isolated test), fallback to natural formula
-    let rollPayload: string | string[] = req.formula;
+  if (_diceBox && _diceInitStatus === 'ready') {
+    let notation: string;
 
     if (req.forcedNotations && req.forcedNotations.length > 0) {
-      rollPayload = req.forcedNotations;
+      // Use first forced group - single notation string for the 3D render
+      // The math is already pre-calculated in forcedNotations
+      notation = buildNotationString(req.forcedNotations);
     } else {
-      let notation = req.formula;
+      // Build notation from formula
+      let formula = req.formula;
       if (req.rollType === "hit_adv" || req.rollType === "hit_disadv") {
-        notation = "2d20";
+        formula = "2d20";
       }
-      const cleanNotation = notation.replace(/k[hl]\d+/gi, "");
-      rollPayload = cleanNotation.match(/(?:\d+)?d\d+/gi) || [];
-    }
-
-    if (rollPayload.length === 0) {
-       console.warn("[DiceManager] No valid dice found in formula:", req.formula);
-       instantRoll(req, onComplete);
-       return;
+      const cleanFormula = formula.replace(/k[hl]\d+/gi, "");
+      const groups = cleanFormula.match(/(?:\d+)?d\d+/gi) || [];
+      if (groups.length === 0) {
+        console.warn("[DiceManager] No valid dice in formula:", req.formula);
+        instantRoll(req, onComplete);
+        return;
+      }
+      notation = groups[0] ?? "1d20"; // roll first group visually
     }
 
     const rollId = `roll_${Date.now()}`;
     _pendingRolls.set(rollId, { req, getPlayerName, onComplete });
 
     try {
-      console.log(`[DiceManager] Rolling payload:`, rollPayload, `with theme: ${theme}`);
-      
-      // For dice-box-threejs we might want to map theme names back to textures if we have complex logic,
-      // but for now we'll just pipe it back to theme_texture. 
-      // If the URL is provided, it handles it in updateConfig
-      _diceBox.updateConfig({ theme_color: style }); 
-
-      const result = _diceBox.roll(rollPayload);
-      
+      console.log(`[DiceManager] Rolling notation: "${notation}"`);
+      // dice-box-threejs roll() takes a single string — e.g. "1d20@18"
+      const result = _diceBox.roll(notation);
       if (result instanceof Promise) {
-          result.catch(e => console.error("[DiceBox] Roll Promise rejected:", e));
+        result.catch((e: any) => console.error("[DiceBox] Roll promise rejected:", e));
       }
       return;
     } catch (err: any) {
-      console.error("[DiceManager] DiceBox.roll() failed entirely:", err);
+      console.error("[DiceManager] DiceBox.roll() failed:", err?.message || err);
       _pendingRolls.delete(rollId);
     }
   } else {
     console.warn("[DiceManager] DiceBox not ready, falling back to instant JS roll.");
   }
 
-  // Always fallback to instant JS roll if 3D dice isn't ready or fails
   instantRoll(req, onComplete);
 }

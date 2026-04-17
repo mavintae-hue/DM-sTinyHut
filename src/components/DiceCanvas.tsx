@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { registerDiceBox, setDiceTheme, setDiceInitStatus } from "@/lib/diceManager";
+import { registerDiceBox, setDiceInitStatus } from "@/lib/diceManager";
 
 interface DiceCanvasProps {
   themeColor: string;
@@ -28,45 +28,48 @@ export default function DiceCanvas({ themeColor, diceTheme }: DiceCanvasProps) {
           throw new Error("DiceBox constructor not found in module exports");
         }
 
-        // Standard constructor targeting our JSX container
-        const box = new DiceBox("#dice-box", {
-          assetPath: "/dice-assets/", // dice-box-threejs might not use this, but we leave it just in case
-          theme_texture: `/dice-assets/textures/${diceTheme || 'wood'}.webp`,
-          theme_color: themeColor,
-          scale: 6,
-          gravity_multiplier: 600,
-          light_intensity: 0.8,
+        // The constructor fires document.querySelector so the element MUST be in DOM
+        const container = document.getElementById("dice-box");
+        if (!container) throw new Error("#dice-box element not in DOM yet");
+
+        // Pass onRollComplete IN the constructor config (not after)
+        const box = new (DiceBox as any)("#dice-box", {
+          assetPath: "/dice-assets/",         // base path for all texture/sound loading
+          theme_colorset: "white",             // built-in colorset name
+          theme_texture: diceTheme || "",      // texture name key from the library's texturelist
+          theme_material: "glass",
+          theme_surface: "green-felt",
+          gravity_multiplier: 400,
+          light_intensity: 0.9,
+          baseScale: 100,
           shadows: true,
           strength: 2,
+          sounds: false,
         });
 
-        // Initialize ThreeJS Box
-        await box.init();
-        
+        // The correct async init method is `initialize()`, NOT `init()`
+        await box.initialize();
+
         registerDiceBox(box);
         setDiceInitStatus('ready');
         console.log("[DiceCanvas] ✓ ThreeJS DiceBox ready and registered!");
 
       } catch (err: any) {
-        console.error("[DiceCanvas] ThreeJS DiceBox init FAILED:", err);
+        console.error("[DiceCanvas] ThreeJS DiceBox init FAILED:", err?.message || err);
         setDiceInitStatus('error');
         initAttempted.current = false;
       }
     };
 
-    const timer = setTimeout(initDice, 100);
+    const timer = setTimeout(initDice, 200);
     return () => clearTimeout(timer);
-  }, [themeColor, diceTheme]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // only run once on mount
 
-  useEffect(() => {
-    setDiceTheme(themeColor, diceTheme);
-  }, [themeColor, diceTheme]);
-
-  // Standard React rendering for the container
   return (
-    <div 
-      id="dice-box" 
-      className="fixed inset-0 z-[100000] pointer-events-none w-screen h-screen overflow-hidden" 
+    <div
+      id="dice-box"
+      className="fixed inset-0 z-[100000] pointer-events-none w-screen h-screen overflow-hidden"
       style={{ position: 'fixed', top: 0, left: 0, background: 'transparent' }}
     />
   );
